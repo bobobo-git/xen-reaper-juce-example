@@ -1,10 +1,8 @@
 #define REAPERAPI_IMPLEMENT
 
 #include "reaper_plugin_functions.h"
-
-#include <string>
-#include <vector>
 #include <memory>
+#include <vector>
 #include <functional>
 #include "JuceHeader.h"
 
@@ -35,6 +33,7 @@ public:
 	template<typename T>
 	T* getDataAs() { return static_cast<T*>(m_data); }
 };
+
 
 action_entry::action_entry(std::string description, std::string idstring, toggle_state togst, std::function<void(action_entry&)> func) :
 	m_desc(description), m_id_string(idstring), m_func(func), m_togglestate(togst)
@@ -69,6 +68,27 @@ bool hookCommandProc(int command, int flag) {
 
 bool g_juce_inited = false;
 
+class BrowserComponent : public Component
+{
+public:
+	BrowserComponent()
+	{
+		m_address_line.setText("http://www.reaper.fm/", dontSendNotification);
+		addAndMakeVisible(&m_address_line);
+		addAndMakeVisible(&m_browser);
+		m_browser.goToURL(m_address_line.getText());
+		setSize(100, 100);
+	}
+	void resized() override
+	{
+		m_address_line.setBounds(0, 0, getWidth(), 19);
+		m_browser.setBounds(0, 20, getWidth(), getHeight() - 20);
+	}
+private:
+	WebBrowserComponent m_browser;
+	TextEditor m_address_line;
+};
+
 class Window : public ResizableWindow
 {
 public:
@@ -83,8 +103,6 @@ public:
 	Window(String title, int w, int h, bool resizable, Colour bgcolor)
 		: ResizableWindow(title,bgcolor,false)
 	{
-		m_browser.setBounds(0, 0, 100, 100);
-		m_browser.goToURL("http://www.reaper.fm/");
 		setContentNonOwned(&m_browser, true);
 		setTopLeftPosition(10, 60);
 		setSize(w, h);
@@ -103,7 +121,7 @@ public:
 		setVisible(false);
 	}
 private:
-	WebBrowserComponent m_browser;
+	BrowserComponent m_browser;
 };
 
 Window* g_browser_wnd = nullptr;
