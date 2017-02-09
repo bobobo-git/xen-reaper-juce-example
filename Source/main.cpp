@@ -72,6 +72,14 @@ bool g_juce_inited = false;
 class Window : public ResizableWindow
 {
 public:
+	static void initGUIifNeeded()
+	{
+		if (g_juce_inited == false)
+		{
+			initialiseJuce_GUI();
+			g_juce_inited = true;
+		}
+	}
 	Window(String title, int w, int h, bool resizable, Colour bgcolor)
 		: ResizableWindow(title,bgcolor,false)
 	{
@@ -90,31 +98,34 @@ public:
 			return ComponentPeer::windowHasCloseButton | ComponentPeer::windowHasTitleBar | ComponentPeer::windowIsResizable | ComponentPeer::windowHasMinimiseButton;
 		return ComponentPeer::windowHasCloseButton | ComponentPeer::windowHasTitleBar | ComponentPeer::windowHasMinimiseButton;
 	}
+	void userTriedToCloseWindow() override
+	{
+		setVisible(false);
+	}
 private:
 	WebBrowserComponent m_browser;
 };
 
 Window* g_browser_wnd = nullptr;
 
-void showBrowserWindow(action_entry&)
+void toggleBrowserWindow(action_entry&)
 {
-	if (g_juce_inited == false)
+	Window::initGUIifNeeded();
+	if (g_browser_wnd == nullptr)
 	{
-		initialiseJuce_GUI();
-		g_juce_inited = true;
-	}
-	g_browser_wnd = new Window("The Inter Webs", 700, 400, true, Colours::black);
-	// This call order is important, the window should not be set visible
-	// before adding it into the Reaper window hierarchy
-	// Currently this only works for Windows, OS-X needs some really annoying special handling
-	// not implemented yet
+		g_browser_wnd = new Window("The Inter Webs", 700, 400, true, Colours::black);
+		// This call order is important, the window should not be set visible
+		// before adding it into the Reaper window hierarchy
+		// Currently this only works for Windows, OS-X needs some really annoying special handling
+		// not implemented yet
 #ifdef WIN32
-	g_browser_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
+		g_browser_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
 #else
-	w->addToDesktop(w->getDesktopWindowStyleFlags(), 0);
-	makeWindowFloatingPanel(w);
+		w->addToDesktop(w->getDesktopWindowStyleFlags(), 0);
+		makeWindowFloatingPanel(w);
 #endif
-	g_browser_wnd->setVisible(true);
+	}
+	g_browser_wnd->setVisible(!g_browser_wnd->isVisible());
 }
 
 extern "C"
@@ -129,7 +140,7 @@ extern "C"
 
 			add_action("JUCE test : Show browser", "JUCETEST_SHOW_BROWSER", CannotToggle, [](action_entry& ae)
 			{
-				showBrowserWindow(ae);
+				toggleBrowserWindow(ae);
 			});
 			rec->Register("hookcommand", (void*)hookCommandProc);
 			return 1; // our plugin registered, return success
