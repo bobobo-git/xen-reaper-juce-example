@@ -68,10 +68,23 @@ bool hookCommandProc(int command, int flag) {
 
 bool g_juce_inited = false;
 
+class MyWebBrowserComponent : public WebBrowserComponent
+{
+public:
+	MyWebBrowserComponent(TextEditor* editor) : m_url_edit(editor) {}
+	bool pageAboutToLoad(const String& url) override
+	{
+		m_url_edit->setText(url, dontSendNotification);
+		return true;
+	}
+private:
+	TextEditor* m_url_edit = nullptr;
+};
+
 class BrowserComponent : public Component
 {
 public:
-	BrowserComponent()
+	BrowserComponent() : m_browser(&m_address_line)
 	{
 		m_address_line.setText("http://www.reaper.fm/", dontSendNotification);
 		addAndMakeVisible(&m_address_line);
@@ -85,8 +98,8 @@ public:
 		m_browser.setBounds(0, 20, getWidth(), getHeight() - 20);
 	}
 private:
-	WebBrowserComponent m_browser;
 	TextEditor m_address_line;
+	MyWebBrowserComponent m_browser;
 };
 
 class Window : public ResizableWindow
