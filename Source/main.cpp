@@ -132,6 +132,9 @@ public:
 	void userTriedToCloseWindow() override
 	{
 		setVisible(false);
+#ifdef WIN32
+		BringWindowToTop(GetMainHwnd());
+#endif
 	}
 private:
 	BrowserComponent m_browser;
@@ -152,8 +155,8 @@ void toggleBrowserWindow(action_entry&)
 #ifdef WIN32
 		g_browser_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
 #else
-		w->addToDesktop(w->getDesktopWindowStyleFlags(), 0);
-		makeWindowFloatingPanel(w);
+		g_browser_wnd->addToDesktop(w->getDesktopWindowStyleFlags(), 0);
+		g_browser_wnd->setAlwaysOnTop(true);
 #endif
 	}
 	g_browser_wnd->setVisible(!g_browser_wnd->isVisible());
