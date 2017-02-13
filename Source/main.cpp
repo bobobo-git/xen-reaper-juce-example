@@ -87,10 +87,8 @@ class BrowserComponent : public Component
 public:
 	BrowserComponent() : m_browser(&m_address_line)
 	{
-		m_address_line.setText("http://www.reaper.fm/", dontSendNotification);
 		addAndMakeVisible(&m_address_line);
 		addAndMakeVisible(&m_browser);
-		m_browser.goToURL(m_address_line.getText());
 		setSize(100, 100);
 	}
 	void resized() override
@@ -98,6 +96,11 @@ public:
 		m_address_line.setBounds(0, 0, getWidth(), 19);
 		m_browser.setBounds(0, 20, getWidth(), getHeight() - 20);
 	}
+    void visibilityChanged() override
+    {
+        if (isVisible()==true)
+            m_browser.goToURL("http://www.reaper.fm/");
+    }
 private:
 	TextEditor m_address_line;
 	MyWebBrowserComponent m_browser;
@@ -137,6 +140,7 @@ public:
 		BringWindowToTop(GetMainHwnd());
 #endif
 	}
+    
 private:
 	BrowserComponent m_browser;
 };
