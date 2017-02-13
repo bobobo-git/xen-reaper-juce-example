@@ -98,12 +98,16 @@ public:
 	}
     void visibilityChanged() override
     {
-        if (isVisible()==true)
+        if (isVisible()==true && m_start_url_loaded == false)
+        {
             m_browser.goToURL("http://www.reaper.fm/");
+            m_start_url_loaded = true;
+        }
     }
 private:
 	TextEditor m_address_line;
 	MyWebBrowserComponent m_browser;
+    bool m_start_url_loaded = false;
 };
 
 class Window : public ResizableWindow
