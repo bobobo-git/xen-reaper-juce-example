@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <functional>
+#include <string>
 #include "JuceHeader.h"
 
 HINSTANCE g_hInst;
@@ -86,10 +87,8 @@ class BrowserComponent : public Component
 public:
 	BrowserComponent() : m_browser(&m_address_line)
 	{
-		m_address_line.setText("http://www.reaper.fm/", dontSendNotification);
 		addAndMakeVisible(&m_address_line);
 		addAndMakeVisible(&m_browser);
-		m_browser.goToURL(m_address_line.getText());
 		setSize(100, 100);
 	}
 	void resized() override
@@ -97,9 +96,18 @@ public:
 		m_address_line.setBounds(0, 0, getWidth(), 19);
 		m_browser.setBounds(0, 20, getWidth(), getHeight() - 20);
 	}
+    void visibilityChanged() override
+    {
+        if (isVisible()==true && m_start_url_loaded == false)
+        {
+            m_browser.goToURL("http://www.reaper.fm/");
+            m_start_url_loaded = true;
+        }
+    }
 private:
 	TextEditor m_address_line;
 	MyWebBrowserComponent m_browser;
+    bool m_start_url_loaded = false;
 };
 
 class Window : public ResizableWindow
@@ -136,18 +144,19 @@ public:
 		BringWindowToTop(GetMainHwnd());
 #endif
 	}
+    
 private:
 	BrowserComponent m_browser;
 };
 
-Window* g_browser_wnd = nullptr;
+std::unique_ptr<Window> g_browser_wnd;
 
 void toggleBrowserWindow(action_entry&)
 {
 	Window::initGUIifNeeded();
 	if (g_browser_wnd == nullptr)
 	{
-		g_browser_wnd = new Window("The Inter Webs", 700, 400, true, Colours::black);
+        g_browser_wnd = std::make_unique<Window>("The Inter Webs", 700, 400, true, Colours::black);
 		// This call order is important, the window should not be set visible
 		// before adding it into the Reaper window hierarchy
 		// Currently this only works for Windows, OS-X needs some really annoying special handling
@@ -155,7 +164,7 @@ void toggleBrowserWindow(action_entry&)
 #ifdef WIN32
 		g_browser_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
 #else
-		g_browser_wnd->addToDesktop(w->getDesktopWindowStyleFlags(), 0);
+		g_browser_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), 0);
 		g_browser_wnd->setAlwaysOnTop(true);
 #endif
 	}
@@ -186,8 +195,7 @@ extern "C"
 		{
 			if (g_juce_inited == true)
 			{
-				if (g_browser_wnd != nullptr)
-					delete g_browser_wnd;
+                g_browser_wnd = nullptr;
 				shutdownJuce_GUI();
 			}
 			return 0;
