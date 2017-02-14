@@ -166,6 +166,9 @@ extern "C"
 {
 	REAPER_PLUGIN_DLL_EXPORT int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_info_t *rec) {
 		if (rec != nullptr) {
+#ifdef WIN32
+			Process::setCurrentModuleInstanceHandle(hInstance);
+#endif
 			if (rec->caller_version != REAPER_PLUGIN_VERSION || !rec->GetFunc) return 0;
 			g_hInst = hInstance;
 			g_plugin_info = rec;
