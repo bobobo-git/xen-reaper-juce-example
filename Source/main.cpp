@@ -80,7 +80,7 @@ public:
 	{
 		g.fillAll(Colours::black);
 		g.setColour(Colours::yellow);
-		const float size = 10.0;
+		const float size = 20.0;
 		g.fillEllipse(m_x_pos*getWidth() - size / 2, m_y_pos*getHeight() - size / 2, size, size);
 	}
 	void mouseDown(const MouseEvent& ev) override
@@ -130,12 +130,14 @@ public:
 		if (m_x_target_track >= 0)
 		{
 			MediaTrack* track = GetTrack(nullptr, m_x_target_track);
-			TrackFX_SetParamNormalized(track, m_x_target_fx, m_x_target_par, m_x_pos);
+			if (track!=nullptr)
+				TrackFX_SetParamNormalized(track, m_x_target_fx, m_x_target_par, m_x_pos);
 		}
 		if (m_y_target_track >= 0)
 		{
 			MediaTrack* track = GetTrack(nullptr, m_y_target_track);
-			TrackFX_SetParamNormalized(track, m_y_target_fx, m_y_target_par, m_y_pos);
+			if (track!=nullptr)
+				TrackFX_SetParamNormalized(track, m_y_target_fx, m_y_target_par, m_y_pos);
 		}
 		repaint();
 	}
