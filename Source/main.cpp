@@ -69,45 +69,85 @@ bool hookCommandProc(int command, int flag) {
 
 bool g_juce_inited = false;
 
-class MyWebBrowserComponent : public WebBrowserComponent
+class XYComponent : public Component
 {
 public:
-	MyWebBrowserComponent(TextEditor* editor) : m_url_edit(editor) {}
-	bool pageAboutToLoad(const String& url) override
+	XYComponent()
 	{
-		m_url_edit->setText(url, dontSendNotification);
-		return true;
-	}
-private:
-	TextEditor* m_url_edit = nullptr;
-};
-
-class BrowserComponent : public Component
-{
-public:
-	BrowserComponent() : m_browser(&m_address_line)
-	{
-		addAndMakeVisible(&m_address_line);
-		addAndMakeVisible(&m_browser);
 		setSize(100, 100);
 	}
-	void resized() override
+	void paint(Graphics& g) override
 	{
-		m_address_line.setBounds(0, 0, getWidth(), 19);
-		m_browser.setBounds(0, 20, getWidth(), getHeight() - 20);
+		g.fillAll(Colours::black);
+		g.setColour(Colours::yellow);
+		const float size = 10.0;
+		g.fillEllipse(m_x_pos*getWidth() - size / 2, m_y_pos*getHeight() - size / 2, size, size);
 	}
-    void visibilityChanged() override
-    {
-        if (isVisible()==true && m_start_url_loaded == false)
-        {
-            m_browser.goToURL("http://www.reaper.fm/");
-            m_start_url_loaded = true;
-        }
-    }
+	void mouseDown(const MouseEvent& ev) override
+	{
+		if (ev.mods.isRightButtonDown() == true)
+		{
+			int tk = -1;
+			int fx = -1;
+			int par = -1;
+			GetLastTouchedFX(&tk, &fx, &par);
+			if (tk >= 1 && fx >= 0)
+			{
+				MediaTrack* track = GetTrack(nullptr, tk-1);
+				if (track != nullptr)
+				{
+					char buf1[2048];
+					char buf2[2048];
+					if (TrackFX_GetFXName(track, fx, buf1, 2048) == true &&
+						TrackFX_GetParamName(track,fx,par,buf2,2048) == true)
+					{
+						PopupMenu menu;
+						String fxparname = String(buf1) + " : " + String(buf2);
+						menu.addItem(1, "Assign " + fxparname + " to X axis");
+						menu.addItem(2, "Assign " + fxparname + " to Y axis");
+						int r = menu.show();
+						if (r == 1)
+						{
+							m_x_target_track = tk - 1;
+							m_x_target_fx = fx;
+							m_x_target_par = par;
+						}
+						if (r == 2)
+						{
+							m_y_target_track = tk - 1;
+							m_y_target_fx = fx;
+							m_y_target_par = par;
+						}
+					}
+				}
+			}
+		}
+	}
+	void mouseDrag(const MouseEvent& ev) override
+	{
+		m_x_pos = jlimit(0.0,1.0, 1.0 / getWidth()*ev.x);
+		m_y_pos = jlimit(0.0,1.0, 1.0 / getHeight()*ev.y);
+		if (m_x_target_track >= 0)
+		{
+			MediaTrack* track = GetTrack(nullptr, m_x_target_track);
+			TrackFX_SetParamNormalized(track, m_x_target_fx, m_x_target_par, m_x_pos);
+		}
+		if (m_y_target_track >= 0)
+		{
+			MediaTrack* track = GetTrack(nullptr, m_y_target_track);
+			TrackFX_SetParamNormalized(track, m_y_target_fx, m_y_target_par, m_y_pos);
+		}
+		repaint();
+	}
 private:
-	TextEditor m_address_line;
-	MyWebBrowserComponent m_browser;
-    bool m_start_url_loaded = false;
+	double m_x_pos = 0.5;
+	double m_y_pos = 0.5;
+	int m_x_target_track = -1;
+	int m_x_target_fx = -1;
+	int m_x_target_par = -1;
+	int m_y_target_track = -1;
+	int m_y_target_fx = -1;
+	int m_y_target_par = -1;
 };
 
 class Window : public ResizableWindow
@@ -124,7 +164,7 @@ public:
 	Window(String title, int w, int h, bool resizable, Colour bgcolor)
 		: ResizableWindow(title,bgcolor,false)
 	{
-		setContentNonOwned(&m_browser, true);
+		setContentNonOwned(&m_xy_component, true);
 		setTopLeftPosition(10, 60);
 		setSize(w, h);
 		setResizable(resizable, false);
@@ -146,29 +186,29 @@ public:
 	}
     
 private:
-	BrowserComponent m_browser;
+	XYComponent m_xy_component;
 };
 
-std::unique_ptr<Window> g_browser_wnd;
+std::unique_ptr<Window> g_xy_wnd;
 
 void toggleBrowserWindow(action_entry&)
 {
 	Window::initGUIifNeeded();
-	if (g_browser_wnd == nullptr)
+	if (g_xy_wnd == nullptr)
 	{
-        g_browser_wnd = std::make_unique<Window>("The Inter Webs", 700, 400, true, Colours::black);
+		g_xy_wnd = std::make_unique<Window>("XY Control", 500, 500, true, Colours::black);
 		// This call order is important, the window should not be set visible
 		// before adding it into the Reaper window hierarchy
 		// Currently this only works for Windows, OS-X needs some really annoying special handling
 		// not implemented yet
 #ifdef WIN32
-		g_browser_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
+		g_xy_wnd->addToDesktop(g_xy_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
 #else
-		g_browser_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), 0);
-		g_browser_wnd->setAlwaysOnTop(true);
+		g_xy_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), 0);
+		g_xy_wnd->setAlwaysOnTop(true);
 #endif
 	}
-	g_browser_wnd->setVisible(!g_browser_wnd->isVisible());
+	g_xy_wnd->setVisible(!g_xy_wnd->isVisible());
 }
 
 extern "C"
@@ -184,7 +224,7 @@ extern "C"
 			g_parent = rec->hwnd_main;
 			if (REAPERAPI_LoadAPI(rec->GetFunc) > 0) return 0;
 
-			add_action("JUCE test : Show browser", "JUCETEST_SHOW_BROWSER", CannotToggle, [](action_entry& ae)
+			add_action("JUCE test : Show XY Control", "JUCETEST_SHOW_XYCONTROL", CannotToggle, [](action_entry& ae)
 			{
 				toggleBrowserWindow(ae);
 			});
@@ -195,7 +235,7 @@ extern "C"
 		{
 			if (g_juce_inited == true)
 			{
-                g_browser_wnd = nullptr;
+				g_xy_wnd = nullptr;
 				shutdownJuce_GUI();
 			}
 			return 0;
