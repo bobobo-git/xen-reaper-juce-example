@@ -95,7 +95,7 @@ public:
 			double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, 5000.0);
 			double pathpos = m_path.getLength() / 5000.0*playpos;
 			auto pt = m_path.getPointAlongPath(pathpos);
-			updateFXParams(pt.x, pt.y);
+			updateFXParams(pt.x, 1.0-pt.y);
 			m_x_pos = pt.x;
 			m_y_pos = pt.y;
 			repaint();
@@ -185,7 +185,7 @@ public:
 		m_x_pos = jlimit(0.0,1.0, 1.0 / getWidth()*ev.x);
 		m_y_pos = jlimit(0.0,1.0, 1.0 / getHeight()*ev.y);
 		m_path.lineTo(m_x_pos, m_y_pos);
-		updateFXParams(m_x_pos, m_y_pos);
+		updateFXParams(m_x_pos, 1.0-m_y_pos);
 		
 		repaint();
 	}
