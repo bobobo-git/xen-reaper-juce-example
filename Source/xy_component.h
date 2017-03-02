@@ -87,8 +87,10 @@ public:
 	void resized() override;
 	void buttonClicked(Button* but) override;
 	void addTab();
+	void removeCurrentTab();
 private:
 	TabbedComponent m_tabs;
 	TextButton m_add_but;
 	TextButton m_rem_but;
+	void updateTabNames();
 };

@@ -259,6 +259,7 @@ XYContainer::XYContainer() : m_tabs(TabbedButtonBar::TabsAtTop)
 	m_add_but.setButtonText("Add");
 	m_rem_but.setButtonText("Remove");
 	m_add_but.addListener(this);
+	m_rem_but.addListener(this);
 	setSize(100, 100);
 }
 
@@ -273,11 +274,33 @@ void XYContainer::buttonClicked(Button * but)
 {
 	if (but == &m_add_but)
 		addTab();
+	if (but == &m_rem_but)
+		removeCurrentTab();
 }
 
 void XYContainer::addTab()
 {
 	XYComponent* comp = new XYComponent;
-	int numtabs = m_tabs.getNumTabs();
-	m_tabs.addTab(String(numtabs + 1), Colours::lightgrey, comp, true);
+	m_tabs.addTab("temp", Colours::lightgrey, comp, true);
+	updateTabNames();
+}
+
+void XYContainer::removeCurrentTab()
+{
+	if (m_tabs.getNumTabs() == 1)
+		return;
+	int cur = m_tabs.getCurrentTabIndex();
+	m_tabs.removeTab(cur);
+	updateTabNames();
+	if (cur < m_tabs.getNumTabs())
+		m_tabs.setCurrentTabIndex(cur, false);
+	else m_tabs.setCurrentTabIndex(0, false);
+}
+
+void XYContainer::updateTabNames()
+{
+	for (int i = 0; i < m_tabs.getNumTabs(); ++i)
+	{
+		m_tabs.setTabName(i, String(i + 1));
+	}
 }
