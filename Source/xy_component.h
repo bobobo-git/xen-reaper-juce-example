@@ -79,3 +79,16 @@ private:
 	bool m_path_finished = false;
 	bool m_auto_close_path = true;
 };
+
+class XYContainer : public Component, public Button::Listener
+{
+public:
+	XYContainer();
+	void resized() override;
+	void buttonClicked(Button* but) override;
+	void addTab();
+private:
+	TabbedComponent m_tabs;
+	TextButton m_add_but;
+	TextButton m_rem_but;
+};

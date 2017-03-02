@@ -106,7 +106,7 @@ public:
 	}
     
 private:
-	XYComponent m_xy_component;
+	XYContainer m_xy_component;
 };
 
 std::unique_ptr<Window> g_xy_wnd;
@@ -116,7 +116,7 @@ void toggleBrowserWindow(action_entry&)
 	Window::initGUIifNeeded();
 	if (g_xy_wnd == nullptr)
 	{
-		g_xy_wnd = std::make_unique<Window>("XY Control", 500, 500, true, Colours::black);
+		g_xy_wnd = std::make_unique<Window>("XY Control", 500, 500, true, Colours::darkgrey);
 		// This call order is important, the window should not be set visible
 		// before adding it into the Reaper window hierarchy
 		// Currently this only works for Windows, OS-X needs some really annoying special handling

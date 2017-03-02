@@ -249,3 +249,35 @@ void ParameterChooserComponent::resized()
 {
 	m_tv.setBounds(0, 0, getWidth(), getHeight());
 }
+
+XYContainer::XYContainer() : m_tabs(TabbedButtonBar::TabsAtTop)
+{
+	addAndMakeVisible(&m_tabs);
+	addAndMakeVisible(&m_add_but);
+	addAndMakeVisible(&m_rem_but);
+	addTab();
+	m_add_but.setButtonText("Add");
+	m_rem_but.setButtonText("Remove");
+	m_add_but.addListener(this);
+	setSize(100, 100);
+}
+
+void XYContainer::resized()
+{
+	m_tabs.setBounds(0, 0, getWidth(), getHeight()-25);
+	m_add_but.setBounds(1, getHeight() - 23, 70, 22);
+	m_rem_but.setBounds(73, getHeight() - 23, 70, 22);
+}
+
+void XYContainer::buttonClicked(Button * but)
+{
+	if (but == &m_add_but)
+		addTab();
+}
+
+void XYContainer::addTab()
+{
+	XYComponent* comp = new XYComponent;
+	int numtabs = m_tabs.getNumTabs();
+	m_tabs.addTab(String(numtabs + 1), Colours::lightgrey, comp, true);
+}
