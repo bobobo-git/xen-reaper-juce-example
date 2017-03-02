@@ -111,7 +111,7 @@ private:
 
 std::unique_ptr<Window> g_xy_wnd;
 
-void toggleBrowserWindow(action_entry&)
+void toggleXYWindow(action_entry&)
 {
 	Window::initGUIifNeeded();
 	if (g_xy_wnd == nullptr)
@@ -144,9 +144,9 @@ extern "C"
 			g_parent = rec->hwnd_main;
 			if (REAPERAPI_LoadAPI(rec->GetFunc) > 0) return 0;
 
-			add_action("JUCE test : Show XY Control", "JUCETEST_SHOW_XYCONTROL", CannotToggle, [](action_entry& ae)
+			add_action("JUCE test : Show/hide XY Control", "JUCETEST_SHOW_XYCONTROL", CannotToggle, [](action_entry& ae)
 			{
-				toggleBrowserWindow(ae);
+				toggleXYWindow(ae);
 			});
 			rec->Register("hookcommand", (void*)hookCommandProc);
 			return 1; // our plugin registered, return success
