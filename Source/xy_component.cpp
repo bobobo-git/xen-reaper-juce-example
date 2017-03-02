@@ -4,28 +4,40 @@
 XYComponent::XYComponent() 
 {
 	setSize(100, 100);
-	startTimer(50);
+	startTimer(1,50);
 }
 
-void XYComponent::timerCallback()
+void XYComponent::timerCallback(int id)
 {
-	if (m_xymode == XYMode::Constant)
-		return;
-	if (m_path.isEmpty() == false && m_path_finished == true)
+	if (id == 1)
 	{
-		double pdur = m_path_duration;
-		double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, pdur);
-		double pathposnorm = 1.0 / pdur*playpos;
-		if (m_timewarp >= 0.0)
-			pathposnorm = pow(pathposnorm, 1.0+4.0*m_timewarp);
-		else
-			pathposnorm = 1.0-pow(1.0-pathposnorm, 1.0+4.0*-m_timewarp);
-		double pathpos = m_path.getLength() * pathposnorm;
-		auto pt = m_path.getPointAlongPath(pathpos);
-		updateFXParams(pt.x, 1.0 - pt.y);
-		m_x_pos = pt.x;
-		m_y_pos = pt.y;
+		if (m_xymode == XYMode::Constant)
+			return;
+		if (m_path.isEmpty() == false && m_path_finished == true)
+		{
+			double pdur = m_path_duration;
+			double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, pdur);
+			double pathposnorm = 1.0 / pdur*playpos;
+			if (m_timewarp >= 0.0)
+				pathposnorm = pow(pathposnorm, 1.0 + 4.0*m_timewarp);
+			else
+				pathposnorm = 1.0 - pow(1.0 - pathposnorm, 1.0 + 4.0*-m_timewarp);
+			double pathpos = m_path.getLength() * pathposnorm;
+			auto pt = m_path.getPointAlongPath(pathpos);
+			updateFXParams(pt.x, 1.0 - pt.y);
+			m_x_pos = pt.x;
+			m_y_pos = pt.y;
+			repaint();
+		}
+	}
+	if (id == 2)
+	{
+		m_path_finished = true;
+		if (m_auto_close_path == true)
+			m_path.closeSubPath();
 		repaint();
+		m_tpos = Time::getMillisecondCounterHiRes();
+		stopTimer(2);
 	}
 }
 
@@ -57,7 +69,9 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 	}
 	if (ev.mods.isRightButtonDown() == false && m_xymode==XYMode::Path)
 	{
-		m_path.clear();
+		if (isTimerRunning(2)==false)
+			m_path.clear();
+		stopTimer(2);
 		m_path.startNewSubPath(1.0 / getWidth()*ev.x, 1.0 / getHeight()*ev.y);
 		m_path_finished = false;
 		repaint();
@@ -196,11 +210,7 @@ void XYComponent::mouseUp(const MouseEvent & ev)
 		return;
 	if (m_xymode == XYMode::Constant)
 		return;
-	m_path_finished = true;
-	if (m_auto_close_path == true)
-		m_path.closeSubPath();
-	repaint();
-	m_tpos = Time::getMillisecondCounterHiRes();
+	startTimer(2, 2000);
 }
 
 void XYComponent::setPathDuration(double len)

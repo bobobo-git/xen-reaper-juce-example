@@ -61,11 +61,11 @@ enum class XYMode
 	Path
 };
 
-class XYComponent : public Component, public Timer
+class XYComponent : public Component, public MultiTimer
 {
 public:
 	XYComponent();
-	void timerCallback() override;
+	void timerCallback(int id) override;
 	void paint(Graphics& g) override;
 	void mouseDown(const MouseEvent& ev) override;
 	void mouseDrag(const MouseEvent& ev) override;
