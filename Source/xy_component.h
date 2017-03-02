@@ -55,6 +55,12 @@ private:
 	TreeView m_tv;
 };
 
+enum class XYMode
+{
+	Constant,
+	Path
+};
+
 class XYComponent : public Component, public Timer
 {
 public:
@@ -78,6 +84,7 @@ private:
 	double m_tpos = 0.0;
 	bool m_path_finished = false;
 	bool m_auto_close_path = true;
+	XYMode m_xymode = XYMode::Path;
 };
 
 class XYContainer : public Component, public Button::Listener

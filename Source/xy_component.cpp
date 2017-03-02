@@ -9,6 +9,8 @@ XYComponent::XYComponent()
 
 void XYComponent::timerCallback()
 {
+	if (m_xymode == XYMode::Constant)
+		return;
 	if (m_path.isEmpty() == false && m_path_finished == true)
 	{
 		double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, 5000.0);
@@ -27,6 +29,8 @@ void XYComponent::paint(Graphics & g)
 	g.setColour(Colours::yellow);
 	const float size = 20.0;
 	g.fillEllipse(m_x_pos*getWidth() - size / 2, m_y_pos*getHeight() - size / 2, size, size);
+	if (m_xymode == XYMode::Constant)
+		return;
 	if (m_path_finished == false)
 		g.setColour(Colours::white);
 	else g.setColour(Colours::green);
@@ -39,7 +43,7 @@ void XYComponent::paint(Graphics & g)
 
 void XYComponent::mouseDown(const MouseEvent & ev)
 {
-	if (ev.mods.isRightButtonDown() == false)
+	if (ev.mods.isRightButtonDown() == false && m_xymode==XYMode::Path)
 	{
 		m_path.clear();
 		m_path.startNewSubPath(1.0 / getWidth()*ev.x, 1.0 / getHeight()*ev.y);
@@ -51,6 +55,10 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 		PopupMenu menu;
 		menu.addItem(7, "Choose parameters...");
 		menu.addItem(8, "Auto-close path", true, m_auto_close_path);
+		PopupMenu modemenu;
+		modemenu.addItem(100, "Constant", true, m_xymode==XYMode::Constant);
+		modemenu.addItem(101, "Path", true, m_xymode == XYMode::Path);
+		menu.addSubMenu("Mode", modemenu, true);
 		int tk = -1;
 		int fx = -1;
 		int par = -1;
@@ -127,6 +135,14 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 		{
 			m_auto_close_path = !m_auto_close_path;
 		}
+		if (r == 100)
+		{
+			m_xymode = XYMode::Constant;
+			m_path.clear();
+		}
+		if (r == 101)
+			m_xymode = XYMode::Path;
+		repaint();
 	}
 }
 
@@ -134,7 +150,8 @@ void XYComponent::mouseDrag(const MouseEvent & ev)
 {
 	m_x_pos = jlimit(0.0, 1.0, 1.0 / getWidth()*ev.x);
 	m_y_pos = jlimit(0.0, 1.0, 1.0 / getHeight()*ev.y);
-	m_path.lineTo(m_x_pos, m_y_pos);
+	if (m_xymode == XYMode::Path)
+		m_path.lineTo(m_x_pos, m_y_pos);
 	updateFXParams(m_x_pos, 1.0 - m_y_pos);
 	repaint();
 }
@@ -157,6 +174,8 @@ void XYComponent::updateFXParams(double x, double y)
 
 void XYComponent::mouseUp(const MouseEvent & ev)
 {
+	if (m_xymode == XYMode::Constant)
+		return;
 	m_path_finished = true;
 	if (m_auto_close_path == true)
 		m_path.closeSubPath();
