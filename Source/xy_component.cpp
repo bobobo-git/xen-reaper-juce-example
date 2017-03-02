@@ -103,7 +103,22 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 		}
 		if (r == 7)
 		{
-			Component* comp = new ParameterChooserComponent;
+			ParameterChooserComponent* comp = new ParameterChooserComponent;
+			comp->OnParameterAssign = [this](int which, int track, int fx, int param)
+			{
+				if (which == 0)
+				{
+					m_x_target_track = track;
+					m_x_target_fx = fx;
+					m_x_target_par = param;
+				}
+				if (which == 1)
+				{
+					m_y_target_track = track;
+					m_y_target_fx = fx;
+					m_y_target_par = param;
+				}
+			};
 			comp->setSize(getWidth() - 40, getHeight() - 40);
 			CallOutBox::launchAsynchronously(comp, { 0,0,10,10 }, this);
 		}
@@ -162,6 +177,18 @@ void ParameterTreeItem::paintItem(Graphics & g, int w, int h)
 
 void ParameterTreeItem::itemClicked(const MouseEvent & e)
 {
+	if (e.mods.isRightButtonDown() == true && m_isleaf == true)
+	{
+		PopupMenu menu;
+		menu.addItem(1, "Assign to X axis");
+		menu.addItem(2, "Assign to Y axis");
+		int r = menu.show();
+		if (r > 0)
+		{
+			if (m_chooser->OnParameterAssign)
+				m_chooser->OnParameterAssign(r-1, m_track_index, m_fx_index, m_param_index);
+		}
+	}
 }
 
 void ParameterTreeItem::itemDoubleClicked(const MouseEvent & e)
@@ -191,13 +218,13 @@ ParameterChooserComponent::ParameterChooserComponent()
 		for (int j = 0; j < TrackFX_GetCount(track); ++j)
 		{
 			TrackFX_GetFXName(track, j, buf, 4096);
-			ParameterTreeItem* fxitem = new ParameterTreeItem(this, String(buf), -1, j, -1, false);
+			ParameterTreeItem* fxitem = new ParameterTreeItem(this, String(buf), i, j, -1, false);
 			trackitem->addSubItem(fxitem, -1);
 			fxitem->setOpen(true);
 			for (int k = 0; k < TrackFX_GetNumParams(track, j); ++k)
 			{
 				TrackFX_GetParamName(track, j, k, buf, 4096);
-				ParameterTreeItem* paramitem = new ParameterTreeItem(this, String(buf), -1, -1, k, true);
+				ParameterTreeItem* paramitem = new ParameterTreeItem(this, String(buf), i, j, k, true);
 				fxitem->addSubItem(paramitem, -1);
 			}
 		}

@@ -50,6 +50,7 @@ public:
 	ParameterChooserComponent();
 	~ParameterChooserComponent();
 	void resized() override;
+	std::function<void(int, int, int, int)> OnParameterAssign;
 private:
 	TreeView m_tv;
 };
