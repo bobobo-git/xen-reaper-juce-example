@@ -13,8 +13,8 @@ void XYComponent::timerCallback()
 		return;
 	if (m_path.isEmpty() == false && m_path_finished == true)
 	{
-		double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, 5000.0);
-		double pathpos = m_path.getLength() / 5000.0*playpos;
+		double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, m_path_duration);
+		double pathpos = m_path.getLength() / m_path_duration*playpos;
 		auto pt = m_path.getPointAlongPath(pathpos);
 		updateFXParams(pt.x, 1.0 - pt.y);
 		m_x_pos = pt.x;
@@ -29,8 +29,10 @@ void XYComponent::paint(Graphics & g)
 	g.setColour(Colours::yellow);
 	const float size = 20.0;
 	g.fillEllipse(m_x_pos*getWidth() - size / 2, m_y_pos*getHeight() - size / 2, size, size);
+	g.setColour(Colours::white);
 	if (m_xymode == XYMode::Constant)
 		return;
+	g.drawText(String(m_path_duration / 1000.0, 1), 2, 2, 200, 30, Justification::left);
 	if (m_path_finished == false)
 		g.setColour(Colours::white);
 	else g.setColour(Colours::green);
@@ -43,6 +45,8 @@ void XYComponent::paint(Graphics & g)
 
 void XYComponent::mouseDown(const MouseEvent & ev)
 {
+	if (ev.mods.isCommandDown() == true)
+		return;
 	if (ev.mods.isRightButtonDown() == false && m_xymode==XYMode::Path)
 	{
 		m_path.clear();
@@ -148,6 +152,12 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 
 void XYComponent::mouseDrag(const MouseEvent & ev)
 {
+	if (ev.mods.isCommandDown() == true)
+	{
+		m_path_duration = jlimit<double>(100.0, 10000.0, jmap<double>(ev.x, 0.0, getWidth(), 100.0, 10000.0));
+		repaint();
+		return;
+	}
 	m_x_pos = jlimit(0.0, 1.0, 1.0 / getWidth()*ev.x);
 	m_y_pos = jlimit(0.0, 1.0, 1.0 / getHeight()*ev.y);
 	if (m_xymode == XYMode::Path)
@@ -174,6 +184,8 @@ void XYComponent::updateFXParams(double x, double y)
 
 void XYComponent::mouseUp(const MouseEvent & ev)
 {
+	if (ev.mods.isCommandDown() == true)
+		return;
 	if (m_xymode == XYMode::Constant)
 		return;
 	m_path_finished = true;
