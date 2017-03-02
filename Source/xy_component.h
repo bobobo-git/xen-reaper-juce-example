@@ -13,6 +13,47 @@ public:
 	double m_y = 0.0;
 };
 
+class ParameterChooserComponent;
+
+class ParameterTreeItem : public TreeViewItem
+{
+public:
+	ParameterTreeItem(ParameterChooserComponent* chooser, String txt, int trackid, int fxid, int paramid, bool isleaf) :
+		m_txt(txt), m_isleaf(isleaf), m_chooser(chooser), m_track_index(trackid),
+		m_fx_index(fxid), m_param_index(paramid)
+	{}
+	bool mightContainSubItems() override;
+	void paintItem(Graphics& g, int w, int h) override;
+	void itemClicked(const MouseEvent & e) override;
+	void itemDoubleClicked(const MouseEvent& e) override;
+	void itemSelectionChanged(bool isNowSelected) override;
+
+	String getNodeType()
+	{
+		if (m_isleaf == true)
+			return m_txt;
+		return String();
+	}
+	ParameterChooserComponent* m_chooser = nullptr;
+	int m_track_index = -1;
+	int m_fx_index = -1;
+	int m_param_index = -1;
+private:
+	String m_txt;
+	bool m_isleaf = false;
+	
+};
+
+class ParameterChooserComponent : public Component
+{
+public:
+	ParameterChooserComponent();
+	~ParameterChooserComponent();
+	void resized() override;
+private:
+	TreeView m_tv;
+};
+
 class XYComponent : public Component, public Timer
 {
 public:
