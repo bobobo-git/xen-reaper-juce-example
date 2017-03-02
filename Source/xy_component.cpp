@@ -46,7 +46,10 @@ void XYComponent::paint(Graphics & g)
 void XYComponent::mouseDown(const MouseEvent & ev)
 {
 	if (ev.mods.isCommandDown() == true)
+	{
+		m_path_dur_at_drag_start = m_path_duration;
 		return;
+	}
 	if (ev.mods.isRightButtonDown() == false && m_xymode==XYMode::Path)
 	{
 		m_path.clear();
@@ -154,7 +157,7 @@ void XYComponent::mouseDrag(const MouseEvent & ev)
 {
 	if (ev.mods.isCommandDown() == true)
 	{
-		m_path_duration = jlimit<double>(100.0, 10000.0, jmap<double>(ev.x, 0.0, getWidth(), 100.0, 10000.0));
+		m_path_duration = jlimit<double>(100.0, 10000.0, m_path_dur_at_drag_start + ev.getDistanceFromDragStartX() * 10);
 		repaint();
 		return;
 	}

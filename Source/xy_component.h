@@ -85,6 +85,7 @@ private:
 	bool m_path_finished = false;
 	bool m_auto_close_path = true;
 	double m_path_duration = 5000.0;
+	double m_path_dur_at_drag_start = 5000.0;
 	XYMode m_xymode = XYMode::Path;
 };
 
