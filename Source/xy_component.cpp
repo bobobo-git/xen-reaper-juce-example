@@ -65,7 +65,7 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 					TrackFX_GetParamName(track, fx, par, buf2, 2048) == true)
 				{
 					
-					String fxparname = String(buf1) + " : " + String(buf2);
+					String fxparname = String(CharPointer_UTF8(buf1)) + " : " + String(CharPointer_UTF8(buf2));
 					menu.addItem(1, "Assign " + fxparname + " to X axis");
 					menu.addItem(2, "Assign " + fxparname + " to Y axis");
 					menu.addItem(3, "Remove X assignment");
@@ -209,7 +209,7 @@ ParameterChooserComponent::ParameterChooserComponent()
 		MediaTrack* track = GetTrack(nullptr, i);
 		char buf[4096];
 		GetSetMediaTrackInfo_String(track, "P_NAME", buf, false);
-		String trackname(buf);
+		String trackname=String(CharPointer_UTF8(buf));
 		if (trackname.isEmpty())
 			trackname = String(i + 1);
 		ParameterTreeItem* trackitem = new ParameterTreeItem(this, trackname, i, -1, -1, false);
@@ -218,7 +218,7 @@ ParameterChooserComponent::ParameterChooserComponent()
 		for (int j = 0; j < TrackFX_GetCount(track); ++j)
 		{
 			TrackFX_GetFXName(track, j, buf, 4096);
-			ParameterTreeItem* fxitem = new ParameterTreeItem(this, String(buf), i, j, -1, false);
+			ParameterTreeItem* fxitem = new ParameterTreeItem(this, String(CharPointer_UTF8(buf)), i, j, -1, false);
 			trackitem->addSubItem(fxitem, -1);
 			fxitem->setOpen(true);
 			for (int k = 0; k < TrackFX_GetNumParams(track, j); ++k)
