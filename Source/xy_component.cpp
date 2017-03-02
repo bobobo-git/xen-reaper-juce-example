@@ -15,7 +15,12 @@ void XYComponent::timerCallback()
 	{
 		double pdur = m_path_duration;
 		double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, pdur);
-		double pathpos = m_path.getLength() / pdur*playpos;
+		double pathposnorm = 1.0 / pdur*playpos;
+		if (m_timewarp >= 0.0)
+			pathposnorm = pow(pathposnorm, 1.0+4.0*m_timewarp);
+		else
+			pathposnorm = 1.0-pow(1.0-pathposnorm, 1.0+4.0*-m_timewarp);
+		double pathpos = m_path.getLength() * pathposnorm;
 		auto pt = m_path.getPointAlongPath(pathpos);
 		updateFXParams(pt.x, 1.0 - pt.y);
 		m_x_pos = pt.x;
@@ -206,6 +211,7 @@ void XYComponent::setPathDuration(double len)
 
 void XYComponent::setTimeWarp(double w)
 {
+	m_timewarp = jlimit<double>(-1.0, 1.0, w);
 }
 
 bool ParameterTreeItem::mightContainSubItems()
@@ -361,6 +367,7 @@ XYComponentWithSliders::XYComponentWithSliders() :
 	addAndMakeVisible(m_slid_timewarp);
 	m_slid_timewarp.setRange(-1.0, 1.0);
 	m_slid_timewarp.setValue(0.0);
+	m_slid_timewarp.addListener(this);
 	addAndMakeVisible(&m_xycomp);
 }
 
@@ -368,6 +375,8 @@ void XYComponentWithSliders::sliderValueChanged(Slider * slid)
 {
 	if (slid == &m_slid_pathdur)
 		m_xycomp.setPathDuration(slid->getValue());
+	if (slid == &m_slid_timewarp)
+		m_xycomp.setTimeWarp(slid->getValue());
 }
 
 void XYComponentWithSliders::resized()
