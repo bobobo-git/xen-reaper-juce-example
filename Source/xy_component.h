@@ -71,6 +71,8 @@ public:
 	void mouseDrag(const MouseEvent& ev) override;
 	void updateFXParams(double x, double y);
 	void mouseUp(const MouseEvent& ev) override;
+	void setPathDuration(double len);
+	void setTimeWarp(double w);
 private:
 	double m_x_pos = 0.5;
 	double m_y_pos = 0.5;
@@ -86,7 +88,21 @@ private:
 	bool m_auto_close_path = true;
 	double m_path_duration = 5000.0;
 	double m_path_dur_at_drag_start = 5000.0;
+	double m_timewarp = 0.0;
 	XYMode m_xymode = XYMode::Path;
+	
+};
+
+class XYComponentWithSliders : public Component, public Slider::Listener
+{
+public:
+	XYComponentWithSliders();
+	void sliderValueChanged(Slider* slid) override;
+	void resized() override;
+private:
+	Slider m_slid_pathdur;
+	Slider m_slid_timewarp;
+	XYComponent m_xycomp;
 };
 
 class XYContainer : public Component, public Button::Listener

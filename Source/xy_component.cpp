@@ -1,7 +1,7 @@
 #include "xy_component.h"
 #include "reaper_plugin_functions.h"
 
-XYComponent::XYComponent()
+XYComponent::XYComponent() 
 {
 	setSize(100, 100);
 	startTimer(50);
@@ -13,8 +13,9 @@ void XYComponent::timerCallback()
 		return;
 	if (m_path.isEmpty() == false && m_path_finished == true)
 	{
-		double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, m_path_duration);
-		double pathpos = m_path.getLength() / m_path_duration*playpos;
+		double pdur = m_path_duration;
+		double playpos = fmod(Time::getMillisecondCounterHiRes() - m_tpos, pdur);
+		double pathpos = m_path.getLength() / pdur*playpos;
 		auto pt = m_path.getPointAlongPath(pathpos);
 		updateFXParams(pt.x, 1.0 - pt.y);
 		m_x_pos = pt.x;
@@ -32,7 +33,6 @@ void XYComponent::paint(Graphics & g)
 	g.setColour(Colours::white);
 	if (m_xymode == XYMode::Constant)
 		return;
-	g.drawText(String(m_path_duration / 1000.0, 1), 2, 2, 200, 30, Justification::left);
 	if (m_path_finished == false)
 		g.setColour(Colours::white);
 	else g.setColour(Colours::green);
@@ -198,6 +198,16 @@ void XYComponent::mouseUp(const MouseEvent & ev)
 	m_tpos = Time::getMillisecondCounterHiRes();
 }
 
+void XYComponent::setPathDuration(double len)
+{
+	m_path_duration = len;
+	//repaint();
+}
+
+void XYComponent::setTimeWarp(double w)
+{
+}
+
 bool ParameterTreeItem::mightContainSubItems()
 {
 	if (m_isleaf == true)
@@ -314,9 +324,10 @@ void XYContainer::buttonClicked(Button * but)
 
 void XYContainer::addTab()
 {
-	XYComponent* comp = new XYComponent;
+	XYComponentWithSliders* comp = new XYComponentWithSliders;
 	m_tabs.addTab("temp", Colours::lightgrey, comp, true);
 	updateTabNames();
+	m_tabs.setCurrentTabIndex(m_tabs.getNumTabs() - 1);
 }
 
 void XYContainer::removeCurrentTab()
@@ -337,4 +348,31 @@ void XYContainer::updateTabNames()
 	{
 		m_tabs.setTabName(i, String(i + 1));
 	}
+}
+
+XYComponentWithSliders::XYComponentWithSliders() :
+	m_slid_pathdur(Slider::RotaryVerticalDrag, Slider::TextBoxBelow),
+	m_slid_timewarp(Slider::RotaryVerticalDrag, Slider::TextBoxBelow)
+{
+	addAndMakeVisible(&m_slid_pathdur);
+	m_slid_pathdur.setRange(100.0, 10000.0, 100.0);
+	m_slid_pathdur.setValue(5000.0);
+	m_slid_pathdur.addListener(this);
+	addAndMakeVisible(m_slid_timewarp);
+	m_slid_timewarp.setRange(-1.0, 1.0);
+	m_slid_timewarp.setValue(0.0);
+	addAndMakeVisible(&m_xycomp);
+}
+
+void XYComponentWithSliders::sliderValueChanged(Slider * slid)
+{
+	if (slid == &m_slid_pathdur)
+		m_xycomp.setPathDuration(slid->getValue());
+}
+
+void XYComponentWithSliders::resized()
+{
+	m_slid_pathdur.setBounds(1, 1, 50, 50);
+	m_slid_timewarp.setBounds(52, 1, 50, 50);
+	m_xycomp.setBounds(1, 55, getWidth() - 2, getHeight() - 55);
 }
