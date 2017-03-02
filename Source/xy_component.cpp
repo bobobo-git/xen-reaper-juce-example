@@ -50,6 +50,7 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 	{
 		PopupMenu menu;
 		menu.addItem(7, "Choose parameters...");
+		menu.addItem(8, "Auto-close path", true, m_auto_close_path);
 		int tk = -1;
 		int fx = -1;
 		int par = -1;
@@ -122,6 +123,10 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 			comp->setSize(getWidth() - 40, getHeight() - 40);
 			CallOutBox::launchAsynchronously(comp, { 0,0,10,10 }, this);
 		}
+		if (r == 8)
+		{
+			m_auto_close_path = !m_auto_close_path;
+		}
 	}
 }
 
@@ -153,7 +158,8 @@ void XYComponent::updateFXParams(double x, double y)
 void XYComponent::mouseUp(const MouseEvent & ev)
 {
 	m_path_finished = true;
-	m_path.closeSubPath();
+	if (m_auto_close_path == true)
+		m_path.closeSubPath();
 	repaint();
 	m_tpos = Time::getMillisecondCounterHiRes();
 }

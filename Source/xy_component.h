@@ -77,4 +77,5 @@ private:
 	Path m_path;
 	double m_tpos = 0.0;
 	bool m_path_finished = false;
+	bool m_auto_close_path = true;
 };
