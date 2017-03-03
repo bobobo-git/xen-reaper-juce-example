@@ -390,10 +390,11 @@ XYComponentWithSliders::XYComponentWithSliders() :
 	m_slid_timewarp(Slider::RotaryVerticalDrag, Slider::TextBoxBelow)
 {
 	addAndMakeVisible(&m_slid_pathdur);
-	m_slid_pathdur.setRange(100.0, 10000.0, 100.0);
-	m_slid_pathdur.setValue(5000.0);
+	m_slid_pathdur.setRange(0.1, 120.0, 0.05);
+	m_slid_pathdur.setSkewFactor(0.3);
+	m_slid_pathdur.setValue(5.0);
 	m_slid_pathdur.addListener(this);
-	m_slid_pathdur.setTooltip("Path duration (ms)");
+	m_slid_pathdur.setTooltip("Path duration (seconds)");
 	addAndMakeVisible(m_slid_timewarp);
 	m_slid_timewarp.setRange(-1.0, 1.0);
 	m_slid_timewarp.setValue(0.0);
@@ -405,7 +406,7 @@ XYComponentWithSliders::XYComponentWithSliders() :
 void XYComponentWithSliders::sliderValueChanged(Slider * slid)
 {
 	if (slid == &m_slid_pathdur)
-		m_xycomp.setPathDuration(slid->getValue());
+		m_xycomp.setPathDuration(slid->getValue()*1000.0);
 	if (slid == &m_slid_timewarp)
 		m_xycomp.setTimeWarp(slid->getValue());
 }
