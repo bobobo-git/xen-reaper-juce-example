@@ -11,8 +11,6 @@ XYComponent::XYComponent() :
 	m_y_skew_slider.setRange(0.1, 4.0);
 	m_x_skew_slider.addListener(this);
 	m_y_skew_slider.addListener(this);
-	//m_x_skew_slider.setTooltip("X axis scaling");
-	//m_y_skew_slider.setTooltip("Y axis scaling");
 }
 
 void XYComponent::timerCallback(int id)
@@ -155,7 +153,9 @@ void XYComponent::showOptionsMenu()
 	modemenu.addItem(100, "Constant", true, m_xymode == XYMode::Constant);
 	modemenu.addItem(101, "Path", true, m_xymode == XYMode::Path);
 	menu.addSubMenu("Mode", modemenu, true);
+	menu.addSectionHeader("X axis parameter scaling");
 	menu.addCustomItem(1000, &m_x_skew_slider,200,20,false);
+	menu.addSectionHeader("Y axis parameter scaling");
 	menu.addCustomItem(1000, &m_y_skew_slider, 200, 20, false);
 	int tk = -1;
 	int fx = -1;
