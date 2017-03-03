@@ -328,6 +328,8 @@ XYContainer::XYContainer() : m_tabs(TabbedButtonBar::TabsAtTop)
 	m_add_but.addListener(this);
 	m_rem_but.addListener(this);
 	m_options_but.addListener(this);
+	m_add_but.setTooltip("Add new XY control tab");
+	m_rem_but.setTooltip("Remove current XY control tab");
 	setSize(100, 100);
 }
 
@@ -391,10 +393,12 @@ XYComponentWithSliders::XYComponentWithSliders() :
 	m_slid_pathdur.setRange(100.0, 10000.0, 100.0);
 	m_slid_pathdur.setValue(5000.0);
 	m_slid_pathdur.addListener(this);
+	m_slid_pathdur.setTooltip("Path duration (ms)");
 	addAndMakeVisible(m_slid_timewarp);
 	m_slid_timewarp.setRange(-1.0, 1.0);
 	m_slid_timewarp.setValue(0.0);
 	m_slid_timewarp.addListener(this);
+	m_slid_timewarp.setTooltip("Warp path playback (Negative decelerates/Positive accelerates");
 	addAndMakeVisible(&m_xycomp);
 }
 

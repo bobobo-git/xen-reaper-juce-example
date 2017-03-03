@@ -107,6 +107,7 @@ public:
     
 private:
 	XYContainer m_xy_component;
+	TooltipWindow m_tooltipw;
 };
 
 std::unique_ptr<Window> g_xy_wnd;
