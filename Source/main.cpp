@@ -124,7 +124,7 @@ void toggleXYWindow(action_entry&)
 #ifdef WIN32
 		g_xy_wnd->addToDesktop(g_xy_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
 #else
-		g_xy_wnd->addToDesktop(g_browser_wnd->getDesktopWindowStyleFlags(), 0);
+		g_xy_wnd->addToDesktop(g_xy_wnd->getDesktopWindowStyleFlags(), 0);
 		g_xy_wnd->setAlwaysOnTop(true);
 #endif
 	}
