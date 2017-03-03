@@ -73,6 +73,7 @@ public:
 	void mouseUp(const MouseEvent& ev) override;
 	void setPathDuration(double len);
 	void setTimeWarp(double w);
+	void showOptionsMenu();
 private:
 	double m_x_pos = 0.5;
 	double m_y_pos = 0.5;
@@ -99,6 +100,7 @@ public:
 	XYComponentWithSliders();
 	void sliderValueChanged(Slider* slid) override;
 	void resized() override;
+	void showOptionsMenu();
 private:
 	Slider m_slid_pathdur;
 	Slider m_slid_timewarp;
@@ -117,5 +119,6 @@ private:
 	TabbedComponent m_tabs;
 	TextButton m_add_but;
 	TextButton m_rem_but;
+	TextButton m_options_but;
 	void updateTabNames();
 };

@@ -78,97 +78,7 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 	}
 	if (ev.mods.isRightButtonDown() == true)
 	{
-		PopupMenu menu;
-		menu.addItem(7, "Choose parameters...");
-		menu.addItem(8, "Auto-close path", true, m_auto_close_path);
-		PopupMenu modemenu;
-		modemenu.addItem(100, "Constant", true, m_xymode==XYMode::Constant);
-		modemenu.addItem(101, "Path", true, m_xymode == XYMode::Path);
-		menu.addSubMenu("Mode", modemenu, true);
-		int tk = -1;
-		int fx = -1;
-		int par = -1;
-		GetLastTouchedFX(&tk, &fx, &par);
-		if (tk >= 1 && fx >= 0)
-		{
-			MediaTrack* track = GetTrack(nullptr, tk - 1);
-			if (track != nullptr)
-			{
-				char buf1[2048];
-				char buf2[2048];
-				if (TrackFX_GetFXName(track, fx, buf1, 2048) == true &&
-					TrackFX_GetParamName(track, fx, par, buf2, 2048) == true)
-				{
-					
-					String fxparname = String(CharPointer_UTF8(buf1)) + " : " + String(CharPointer_UTF8(buf2));
-					menu.addItem(1, "Assign " + fxparname + " to X axis");
-					menu.addItem(2, "Assign " + fxparname + " to Y axis");
-					menu.addItem(3, "Remove X assignment");
-					menu.addItem(4, "Remove Y assignment");
-					menu.addItem(5, "Clear path");
-				}
-			}
-		}
-		int r = menu.show();
-		if (r == 1)
-		{
-			m_x_target_track = tk - 1;
-			m_x_target_fx = fx;
-			m_x_target_par = par;
-		}
-		if (r == 2)
-		{
-			m_y_target_track = tk - 1;
-			m_y_target_fx = fx;
-			m_y_target_par = par;
-		}
-		if (r == 3)
-		{
-			m_x_target_track = -1;
-		}
-		if (r == 4)
-		{
-			m_y_target_track = -1;
-		}
-		if (r == 5)
-		{
-			m_path.clear();
-			m_path_finished = false;
-			repaint();
-		}
-		if (r == 7)
-		{
-			ParameterChooserComponent* comp = new ParameterChooserComponent;
-			comp->OnParameterAssign = [this](int which, int track, int fx, int param)
-			{
-				if (which == 0)
-				{
-					m_x_target_track = track;
-					m_x_target_fx = fx;
-					m_x_target_par = param;
-				}
-				if (which == 1)
-				{
-					m_y_target_track = track;
-					m_y_target_fx = fx;
-					m_y_target_par = param;
-				}
-			};
-			comp->setSize(getWidth() - 40, getHeight() - 40);
-			CallOutBox::launchAsynchronously(comp, { 0,0,10,10 }, this);
-		}
-		if (r == 8)
-		{
-			m_auto_close_path = !m_auto_close_path;
-		}
-		if (r == 100)
-		{
-			m_xymode = XYMode::Constant;
-			m_path.clear();
-		}
-		if (r == 101)
-			m_xymode = XYMode::Path;
-		repaint();
+		showOptionsMenu();
 	}
 }
 
@@ -222,6 +132,101 @@ void XYComponent::setPathDuration(double len)
 void XYComponent::setTimeWarp(double w)
 {
 	m_timewarp = jlimit<double>(-1.0, 1.0, w);
+}
+
+void XYComponent::showOptionsMenu()
+{
+	PopupMenu menu;
+	menu.addItem(7, "Choose parameters...");
+	menu.addItem(8, "Auto-close path", true, m_auto_close_path);
+	PopupMenu modemenu;
+	modemenu.addItem(100, "Constant", true, m_xymode == XYMode::Constant);
+	modemenu.addItem(101, "Path", true, m_xymode == XYMode::Path);
+	menu.addSubMenu("Mode", modemenu, true);
+	int tk = -1;
+	int fx = -1;
+	int par = -1;
+	GetLastTouchedFX(&tk, &fx, &par);
+	if (tk >= 1 && fx >= 0)
+	{
+		MediaTrack* track = GetTrack(nullptr, tk - 1);
+		if (track != nullptr)
+		{
+			char buf1[2048];
+			char buf2[2048];
+			if (TrackFX_GetFXName(track, fx, buf1, 2048) == true &&
+				TrackFX_GetParamName(track, fx, par, buf2, 2048) == true)
+			{
+
+				String fxparname = String(CharPointer_UTF8(buf1)) + " : " + String(CharPointer_UTF8(buf2));
+				menu.addItem(1, "Assign " + fxparname + " to X axis");
+				menu.addItem(2, "Assign " + fxparname + " to Y axis");
+				menu.addItem(3, "Remove X assignment");
+				menu.addItem(4, "Remove Y assignment");
+				menu.addItem(5, "Clear path");
+			}
+		}
+	}
+	int r = menu.show();
+	if (r == 1)
+	{
+		m_x_target_track = tk - 1;
+		m_x_target_fx = fx;
+		m_x_target_par = par;
+	}
+	if (r == 2)
+	{
+		m_y_target_track = tk - 1;
+		m_y_target_fx = fx;
+		m_y_target_par = par;
+	}
+	if (r == 3)
+	{
+		m_x_target_track = -1;
+	}
+	if (r == 4)
+	{
+		m_y_target_track = -1;
+	}
+	if (r == 5)
+	{
+		m_path.clear();
+		m_path_finished = false;
+		repaint();
+	}
+	if (r == 7)
+	{
+		ParameterChooserComponent* comp = new ParameterChooserComponent;
+		comp->OnParameterAssign = [this](int which, int track, int fx, int param)
+		{
+			if (which == 0)
+			{
+				m_x_target_track = track;
+				m_x_target_fx = fx;
+				m_x_target_par = param;
+			}
+			if (which == 1)
+			{
+				m_y_target_track = track;
+				m_y_target_fx = fx;
+				m_y_target_par = param;
+			}
+		};
+		comp->setSize(getWidth() - 40, getHeight() - 40);
+		CallOutBox::launchAsynchronously(comp, { 0,0,10,10 }, this);
+	}
+	if (r == 8)
+	{
+		m_auto_close_path = !m_auto_close_path;
+	}
+	if (r == 100)
+	{
+		m_xymode = XYMode::Constant;
+		m_path.clear();
+	}
+	if (r == 101)
+		m_xymode = XYMode::Path;
+	repaint();
 }
 
 bool ParameterTreeItem::mightContainSubItems()
@@ -315,11 +320,14 @@ XYContainer::XYContainer() : m_tabs(TabbedButtonBar::TabsAtTop)
 	addAndMakeVisible(&m_tabs);
 	addAndMakeVisible(&m_add_but);
 	addAndMakeVisible(&m_rem_but);
+	addAndMakeVisible(&m_options_but);
 	addTab();
 	m_add_but.setButtonText("Add");
 	m_rem_but.setButtonText("Remove");
+	m_options_but.setButtonText("Options...");
 	m_add_but.addListener(this);
 	m_rem_but.addListener(this);
+	m_options_but.addListener(this);
 	setSize(100, 100);
 }
 
@@ -327,7 +335,8 @@ void XYContainer::resized()
 {
 	m_tabs.setBounds(0, 0, getWidth(), getHeight()-25);
 	m_add_but.setBounds(1, getHeight() - 23, 70, 22);
-	m_rem_but.setBounds(73, getHeight() - 23, 70, 22);
+	m_rem_but.setBounds(m_add_but.getRight()+2, getHeight() - 23, 70, 22);
+	m_options_but.setBounds(m_rem_but.getRight() + 2, getHeight() - 23, 100, 22);
 }
 
 void XYContainer::buttonClicked(Button * but)
@@ -336,6 +345,14 @@ void XYContainer::buttonClicked(Button * but)
 		addTab();
 	if (but == &m_rem_but)
 		removeCurrentTab();
+	if (but == &m_options_but)
+	{
+		XYComponentWithSliders* comp = dynamic_cast<XYComponentWithSliders*>(m_tabs.getCurrentContentComponent());
+		if (comp != nullptr)
+		{
+			comp->showOptionsMenu();
+		}
+	}
 }
 
 void XYContainer::addTab()
@@ -394,4 +411,9 @@ void XYComponentWithSliders::resized()
 	m_slid_pathdur.setBounds(1, 1, 50, 50);
 	m_slid_timewarp.setBounds(52, 1, 50, 50);
 	m_xycomp.setBounds(1, 55, getWidth() - 2, getHeight() - 55);
+}
+
+void XYComponentWithSliders::showOptionsMenu()
+{
+	m_xycomp.showOptionsMenu();
 }
