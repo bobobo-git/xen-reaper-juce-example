@@ -1,10 +1,18 @@
 #include "xy_component.h"
 #include "reaper_plugin_functions.h"
 
-XYComponent::XYComponent() 
+XYComponent::XYComponent() :
+	m_x_skew_slider(Slider::LinearHorizontal, Slider::TextBoxRight),
+	m_y_skew_slider(Slider::LinearHorizontal, Slider::TextBoxRight)
 {
 	setSize(100, 100);
 	startTimer(1,50);
+	m_x_skew_slider.setRange(0.1, 4.0);
+	m_y_skew_slider.setRange(0.1, 4.0);
+	m_x_skew_slider.addListener(this);
+	m_y_skew_slider.addListener(this);
+	//m_x_skew_slider.setTooltip("X axis scaling");
+	//m_y_skew_slider.setTooltip("Y axis scaling");
 }
 
 void XYComponent::timerCallback(int id)
@@ -100,6 +108,10 @@ void XYComponent::mouseDrag(const MouseEvent & ev)
 
 void XYComponent::updateFXParams(double x, double y)
 {
+	NormalisableRange<double> nrx(0.0,1.0,0.001,m_x_par_skew);
+	x = nrx.convertFrom0to1(x);
+	NormalisableRange<double> nry(0.0, 1.0, 0.001, m_y_par_skew);
+	y = nrx.convertFrom0to1(y);
 	if (m_x_target_track >= 0)
 	{
 		MediaTrack* track = GetTrack(nullptr, m_x_target_track);
@@ -143,6 +155,8 @@ void XYComponent::showOptionsMenu()
 	modemenu.addItem(100, "Constant", true, m_xymode == XYMode::Constant);
 	modemenu.addItem(101, "Path", true, m_xymode == XYMode::Path);
 	menu.addSubMenu("Mode", modemenu, true);
+	menu.addCustomItem(1000, &m_x_skew_slider,200,20,false);
+	menu.addCustomItem(1000, &m_y_skew_slider, 200, 20, false);
 	int tk = -1;
 	int fx = -1;
 	int par = -1;
@@ -227,6 +241,14 @@ void XYComponent::showOptionsMenu()
 	if (r == 101)
 		m_xymode = XYMode::Path;
 	repaint();
+}
+
+void XYComponent::sliderValueChanged(Slider * slid)
+{
+	if (slid == &m_x_skew_slider)
+		m_x_par_skew = slid->getValue();
+	if (slid == &m_y_skew_slider)
+		m_y_par_skew = slid->getValue();
 }
 
 bool ParameterTreeItem::mightContainSubItems()

@@ -61,7 +61,7 @@ enum class XYMode
 	Path
 };
 
-class XYComponent : public Component, public MultiTimer
+class XYComponent : public Component, public MultiTimer, public Slider::Listener
 {
 public:
 	XYComponent();
@@ -75,11 +75,14 @@ public:
 	void setTimeWarp(double w);
 	void showOptionsMenu();
 private:
+	void sliderValueChanged(Slider* slid) override;
 	double m_x_pos = 0.5;
 	double m_y_pos = 0.5;
 	int m_x_target_track = -1;
 	int m_x_target_fx = -1;
 	int m_x_target_par = -1;
+	double m_x_par_skew = 1.0;
+	double m_y_par_skew = 1.0;
 	int m_y_target_track = -1;
 	int m_y_target_fx = -1;
 	int m_y_target_par = -1;
@@ -91,7 +94,8 @@ private:
 	double m_path_dur_at_drag_start = 5000.0;
 	double m_timewarp = 0.0;
 	XYMode m_xymode = XYMode::Path;
-	
+	Slider m_x_skew_slider;
+	Slider m_y_skew_slider;
 };
 
 class XYComponentWithSliders : public Component, public Slider::Listener
