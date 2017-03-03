@@ -106,10 +106,10 @@ void XYComponent::mouseDrag(const MouseEvent & ev)
 
 void XYComponent::updateFXParams(double x, double y)
 {
-	NormalisableRange<double> nrx(0.0,1.0,0.001,m_x_par_skew);
+	NormalisableRange<double> nrx(0.0, 1.0, 0.001, m_x_par_skew);
 	x = nrx.convertFrom0to1(x);
 	NormalisableRange<double> nry(0.0, 1.0, 0.001, m_y_par_skew);
-	y = nrx.convertFrom0to1(y);
+	y = nry.convertFrom0to1(y);
 	if (m_x_target_track >= 0)
 	{
 		MediaTrack* track = GetTrack(nullptr, m_x_target_track);
