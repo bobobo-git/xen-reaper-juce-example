@@ -61,6 +61,19 @@ enum class XYMode
 	Path
 };
 
+class FXAssignment
+{
+public:
+	FXAssignment() {}
+	FXAssignment(int tkid, int fxid, int parid) :
+		m_track_id(tkid), m_fx(fxid), m_param(parid) {}
+	int m_track_id = -1;
+	int m_fx = -1;
+	int m_param = -1;
+	double m_param_skew = 1.0;
+	//GUID* m_fx_GUID;
+};
+
 class XYComponent : public Component, public MultiTimer, public Slider::Listener
 {
 public:
@@ -78,14 +91,8 @@ private:
 	void sliderValueChanged(Slider* slid) override;
 	double m_x_pos = 0.5;
 	double m_y_pos = 0.5;
-	int m_x_target_track = -1;
-	int m_x_target_fx = -1;
-	int m_x_target_par = -1;
-	double m_x_par_skew = 1.0;
-	double m_y_par_skew = 1.0;
-	int m_y_target_track = -1;
-	int m_y_target_fx = -1;
-	int m_y_target_par = -1;
+	FXAssignment m_x_assignment;
+	FXAssignment m_y_assignment;
 	Path m_path;
 	double m_tpos = 0.0;
 	bool m_path_finished = false;

@@ -106,21 +106,21 @@ void XYComponent::mouseDrag(const MouseEvent & ev)
 
 void XYComponent::updateFXParams(double x, double y)
 {
-	NormalisableRange<double> nrx(0.0, 1.0, 0.001, m_x_par_skew);
+	NormalisableRange<double> nrx(0.0, 1.0, 0.001, m_x_assignment.m_param_skew);
 	x = nrx.convertFrom0to1(x);
-	NormalisableRange<double> nry(0.0, 1.0, 0.001, m_y_par_skew);
+	NormalisableRange<double> nry(0.0, 1.0, 0.001, m_y_assignment.m_param_skew);
 	y = nry.convertFrom0to1(y);
-	if (m_x_target_track >= 0)
+	if (m_x_assignment.m_track_id >= 0)
 	{
-		MediaTrack* track = GetTrack(nullptr, m_x_target_track);
+		MediaTrack* track = GetTrack(nullptr, m_x_assignment.m_track_id);
 		if (track != nullptr)
-			TrackFX_SetParamNormalized(track, m_x_target_fx, m_x_target_par, x);
+			TrackFX_SetParamNormalized(track, m_x_assignment.m_fx, m_x_assignment.m_param, x);
 	}
-	if (m_y_target_track >= 0)
+	if (m_y_assignment.m_track_id >= 0)
 	{
-		MediaTrack* track = GetTrack(nullptr, m_y_target_track);
+		MediaTrack* track = GetTrack(nullptr, m_y_assignment.m_track_id);
 		if (track != nullptr)
-			TrackFX_SetParamNormalized(track, m_y_target_fx, m_y_target_par, y);
+			TrackFX_SetParamNormalized(track, m_y_assignment.m_fx, m_y_assignment.m_param, y);
 	}
 }
 
@@ -184,23 +184,19 @@ void XYComponent::showOptionsMenu()
 	int r = menu.show();
 	if (r == 1)
 	{
-		m_x_target_track = tk - 1;
-		m_x_target_fx = fx;
-		m_x_target_par = par;
+		m_x_assignment = { tk - 1,fx,par };
 	}
 	if (r == 2)
 	{
-		m_y_target_track = tk - 1;
-		m_y_target_fx = fx;
-		m_y_target_par = par;
+		m_y_assignment = { tk - 1, fx, par };
 	}
 	if (r == 3)
 	{
-		m_x_target_track = -1;
+		m_x_assignment = { -1,-1,-1 };
 	}
 	if (r == 4)
 	{
-		m_y_target_track = -1;
+		m_y_assignment = { -1,-1,-1 };
 	}
 	if (r == 5)
 	{
@@ -215,15 +211,11 @@ void XYComponent::showOptionsMenu()
 		{
 			if (which == 0)
 			{
-				m_x_target_track = track;
-				m_x_target_fx = fx;
-				m_x_target_par = param;
+				m_x_assignment = { track,fx,param };
 			}
 			if (which == 1)
 			{
-				m_y_target_track = track;
-				m_y_target_fx = fx;
-				m_y_target_par = param;
+				m_y_assignment = { track,fx,param };
 			}
 		};
 		comp->setSize(getWidth() - 40, getHeight() - 40);
@@ -246,9 +238,9 @@ void XYComponent::showOptionsMenu()
 void XYComponent::sliderValueChanged(Slider * slid)
 {
 	if (slid == &m_x_skew_slider)
-		m_x_par_skew = slid->getValue();
+		m_x_assignment.m_param_skew = slid->getValue();
 	if (slid == &m_y_skew_slider)
-		m_y_par_skew = slid->getValue();
+		m_y_assignment.m_param_skew = slid->getValue();
 }
 
 bool ParameterTreeItem::mightContainSubItems()
