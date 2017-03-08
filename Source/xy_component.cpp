@@ -287,36 +287,10 @@ void ParameterTreeItem::itemSelectionChanged(bool isNowSelected)
 ParameterChooserComponent::ParameterChooserComponent()
 {
 	addAndMakeVisible(&m_tv);
+	addAndMakeVisible(&m_filter_edit);
+	m_filter_edit.addListener(this);
 	m_tv.setColour(TreeView::ColourIds::backgroundColourId, Colours::white);
-	ParameterTreeItem* rootitem = new ParameterTreeItem(this, "Root", -1, -1, -1, false);
-	for (int i = 0; i < CountTracks(nullptr); ++i)
-	{
-		MediaTrack* track = GetTrack(nullptr, i);
-		char buf[4096];
-		GetSetMediaTrackInfo_String(track, "P_NAME", buf, false);
-		String trackname=String(CharPointer_UTF8(buf));
-		if (trackname.isEmpty())
-			trackname = String(i + 1);
-		ParameterTreeItem* trackitem = new ParameterTreeItem(this, trackname, i, -1, -1, false);
-		rootitem->addSubItem(trackitem, -1);
-		trackitem->setOpen(true);
-		for (int j = 0; j < TrackFX_GetCount(track); ++j)
-		{
-			TrackFX_GetFXName(track, j, buf, 4096);
-			ParameterTreeItem* fxitem = new ParameterTreeItem(this, String(CharPointer_UTF8(buf)), i, j, -1, false);
-			trackitem->addSubItem(fxitem, -1);
-			fxitem->setOpen(true);
-			for (int k = 0; k < TrackFX_GetNumParams(track, j); ++k)
-			{
-				TrackFX_GetParamName(track, j, k, buf, 4096);
-				ParameterTreeItem* paramitem = new ParameterTreeItem(this, String(buf), i, j, k, true);
-				fxitem->addSubItem(paramitem, -1);
-			}
-		}
-	}
-	m_tv.setRootItem(rootitem);
-	m_tv.setRootItemVisible(false);
-	
+	updateTree(String());
 }
 
 ParameterChooserComponent::~ParameterChooserComponent()
@@ -326,7 +300,73 @@ ParameterChooserComponent::~ParameterChooserComponent()
 
 void ParameterChooserComponent::resized()
 {
-	m_tv.setBounds(0, 0, getWidth(), getHeight());
+	m_filter_edit.setBounds(1, 1, getWidth() - 2, 22);
+	m_tv.setBounds(0, 24, getWidth(), getHeight()-25);
+}
+
+void ParameterChooserComponent::textEditorTextChanged(TextEditor & ed)
+{
+	if (&ed == &m_filter_edit)
+		updateTree(m_filter_edit.getText());
+}
+
+bool containsAllTokens(const String& txt, const StringArray& filtertokens)
+{
+	int cnt = 0;
+	for (int i = 0; i < filtertokens.size(); ++i)
+	{
+		if (txt.containsIgnoreCase(filtertokens[i]) == true)
+			++cnt;
+	}
+	return cnt == filtertokens.size();
+}
+
+void ParameterChooserComponent::updateTree(String filter)
+{
+	StringArray filtertokens = StringArray::fromTokens(filter, " ");
+	m_tv.deleteRootItem();
+	ParameterTreeItem* rootitem = new ParameterTreeItem(this, "Root", -1, -1, -1, false);
+	for (int i = 0; i < CountTracks(nullptr); ++i)
+	{
+		MediaTrack* track = GetTrack(nullptr, i);
+		char buf[4096];
+		GetSetMediaTrackInfo_String(track, "P_NAME", buf, false);
+		String trackname = String(CharPointer_UTF8(buf));
+		if (trackname.isEmpty())
+			trackname = String(i + 1);
+		ParameterTreeItem* trackitem = nullptr;  
+		for (int j = 0; j < TrackFX_GetCount(track); ++j)
+		{
+			TrackFX_GetFXName(track, j, buf, 4096);
+			String fxname = String(CharPointer_UTF8(buf));
+			ParameterTreeItem* fxitem = nullptr;  
+			for (int k = 0; k < TrackFX_GetNumParams(track, j); ++k)
+			{
+				TrackFX_GetParamName(track, j, k, buf, 4096);
+				String parname = String(CharPointer_UTF8(buf));
+				String pathtopar = trackname + fxname + parname;
+				if (containsAllTokens(pathtopar, filtertokens) == true)
+				{
+					if (trackitem == nullptr)
+					{
+						trackitem = new ParameterTreeItem(this, trackname, i, -1, -1, false);
+						rootitem->addSubItem(trackitem, -1);
+						trackitem->setOpen(true);
+					}
+					if (fxitem == nullptr)
+					{
+						fxitem = new ParameterTreeItem(this, fxname, i, j, -1, false);
+						trackitem->addSubItem(fxitem, -1);
+						fxitem->setOpen(true);
+					}
+					ParameterTreeItem* paramitem = new ParameterTreeItem(this, parname, i, j, k, true);
+					fxitem->addSubItem(paramitem, -1);
+				}
+			}
+		}
+	}
+	m_tv.setRootItem(rootitem);
+	m_tv.setRootItemVisible(false);
 }
 
 XYContainer::XYContainer() : m_tabs(TabbedButtonBar::TabsAtTop)

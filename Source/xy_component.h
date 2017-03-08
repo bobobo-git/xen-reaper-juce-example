@@ -44,15 +44,18 @@ private:
 	
 };
 
-class ParameterChooserComponent : public Component
+class ParameterChooserComponent : public Component, public TextEditor::Listener
 {
 public:
 	ParameterChooserComponent();
 	~ParameterChooserComponent();
 	void resized() override;
+	void textEditorTextChanged(TextEditor& ed) override;
 	std::function<void(int, int, int, int)> OnParameterAssign;
 private:
 	TreeView m_tv;
+	TextEditor m_filter_edit;
+	void updateTree(String filter);
 };
 
 enum class XYMode
