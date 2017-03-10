@@ -124,8 +124,7 @@ void XYComponent::mouseUp(const MouseEvent & ev)
 
 void XYComponent::setPathDuration(double len)
 {
-	m_path_duration = len;
-	//repaint();
+	m_path_duration = jlimit<double>(0.1,120000.0,len);
 }
 
 void XYComponent::setTimeWarp(double w)
@@ -415,9 +414,7 @@ void XYContainer::removeCurrentTab()
 	int cur = m_tabs.getCurrentTabIndex();
 	m_tabs.removeTab(cur);
 	updateTabNames();
-	if (cur < m_tabs.getNumTabs())
-		m_tabs.setCurrentTabIndex(cur, false);
-	else m_tabs.setCurrentTabIndex(0, false);
+	m_tabs.setCurrentTabIndex(jlimit<int>(0, m_tabs.getNumTabs() - 1, cur));
 }
 
 void XYContainer::updateTabNames()
@@ -426,6 +423,7 @@ void XYContainer::updateTabNames()
 	{
 		m_tabs.setTabName(i, String(i + 1));
 	}
+	m_rem_but.setEnabled(m_tabs.getNumTabs() > 1);
 }
 
 XYComponentWithSliders::XYComponentWithSliders() :
