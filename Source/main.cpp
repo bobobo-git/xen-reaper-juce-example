@@ -68,6 +68,23 @@ bool hookCommandProc(int command, int flag) {
 	return false; // failed to run relevant action
 }
 
+// Reaper calls back to this when it wants to know an actions's toggle state
+int toggleActionCallback(int command_id)
+{
+	for (auto& e : g_actions)
+	{
+		if (command_id != 0 && e->m_togglestate != CannotToggle && e->m_command_id == command_id)
+		{
+			if (e->m_togglestate == ToggleOff)
+				return 0;
+			if (e->m_togglestate == ToggleOn)
+				return 1;
+		}
+	}
+	// -1 if action not provided by this extension or is not togglable
+	return -1;
+}
+
 bool g_juce_inited = false;
 
 class Window : public ResizableWindow
@@ -99,12 +116,17 @@ public:
 	}
 	void userTriedToCloseWindow() override
 	{
+		if (m_assoc_action != nullptr)
+		{
+			m_assoc_action->m_togglestate = ToggleOff;
+			RefreshToolbar(m_assoc_action->m_command_id);
+		}
 		setVisible(false);
 #ifdef WIN32
 		BringWindowToTop(GetMainHwnd());
 #endif
 	}
-    
+	action_entry* m_assoc_action = nullptr;
 private:
 	XYContainer m_xy_component;
 	TooltipWindow m_tooltipw;
@@ -112,7 +134,7 @@ private:
 
 std::unique_ptr<Window> g_xy_wnd;
 
-void toggleXYWindow(action_entry&)
+void toggleXYWindow(action_entry& ae)
 {
 	Window::initGUIifNeeded();
 	if (g_xy_wnd == nullptr)
@@ -128,8 +150,12 @@ void toggleXYWindow(action_entry&)
 		g_xy_wnd->addToDesktop(g_xy_wnd->getDesktopWindowStyleFlags(), 0);
 		g_xy_wnd->setAlwaysOnTop(true);
 #endif
+		g_xy_wnd->m_assoc_action = &ae;
 	}
 	g_xy_wnd->setVisible(!g_xy_wnd->isVisible());
+	if (g_xy_wnd->isVisible() == true)
+		ae.m_togglestate = ToggleOn;
+	else ae.m_togglestate = ToggleOff;
 }
 
 extern "C"
@@ -145,11 +171,12 @@ extern "C"
 			g_parent = rec->hwnd_main;
 			if (REAPERAPI_LoadAPI(rec->GetFunc) > 0) return 0;
 
-			add_action("JUCE test : Show/hide XY Control", "JUCETEST_SHOW_XYCONTROL", CannotToggle, [](action_entry& ae)
+			add_action("JUCE test : Show/hide XY Control", "JUCETEST_SHOW_XYCONTROL", ToggleOff, [](action_entry& ae)
 			{
 				toggleXYWindow(ae);
 			});
 			rec->Register("hookcommand", (void*)hookCommandProc);
+			rec->Register("toggleaction", (void*)toggleActionCallback);
 			return 1; // our plugin registered, return success
 		}
 		else
