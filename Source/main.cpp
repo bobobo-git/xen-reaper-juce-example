@@ -200,10 +200,12 @@ extern "C"
 			{
 				toggleXYWindow(ae);
 			});
+			
 			add_action("JUCE test : Show/hide RubberBand", "JUCETEST_SHOW_RUBBERBAND", ToggleOff, [](action_entry& ae)
 			{
 				toggleRubberBandWindow(ae);
 			});
+			
 			rec->Register("hookcommand", (void*)hookCommandProc);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
 			return 1; // our plugin registered, return success

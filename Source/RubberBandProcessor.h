@@ -13,6 +13,20 @@ public:
 		m_time_ratio_slider(Slider::LinearHorizontal,Slider::TextBoxRight),
 		m_pitch_slider(Slider::LinearHorizontal, Slider::TextBoxRight)
 	{
+		if (HasExtState("xenrubberband", "exelocation") == true)
+		{
+			const char* exefn = GetExtState("xenrubberband", "exelocation");
+			m_rubberband_exe = String(CharPointer_UTF8(exefn));
+		}
+		else
+		{
+			FileChooser chooser("Choose RubberBand executable",File(),"*.exe");
+			if (chooser.browseForFileToOpen())
+			{
+				m_rubberband_exe = chooser.getResult().getFullPathName();
+				SetExtState("xenrubberband", "exelocation", m_rubberband_exe.toRawUTF8(), true);
+			}
+		}
 		addAndMakeVisible(&m_time_ratio_slider);
 		addAndMakeVisible(&m_pitch_slider);
 		addAndMakeVisible(&m_crispness_combo);
@@ -61,14 +75,20 @@ public:
 		if (m_child_process.isRunning() == true)
 			return;
 		if (CountSelectedMediaItems(nullptr) == 0)
+		{
+			showBubbleMessage("No media item selected");
 			return;
+		}
 		MediaItem* item = GetSelectedMediaItem(nullptr, 0);
 		MediaItem_Take* take = GetActiveTake(item);
 		PCM_source* src = GetMediaItemTake_Source(take);
 		if (src == nullptr)
+		{
+			showBubbleMessage("Could not get media item take source");
 			return;
+		}
 		StringArray args;
-		args.add("C:/Portable_Apps/rubber bantti/rubberband.exe");
+		args.add(m_rubberband_exe);
 		args.add("-c" + String(m_crispness_combo.getSelectedId() - 1));
 		args.add("-t" + String(m_time_ratio_slider.getValue()));
 		args.add("-p" + String(m_pitch_slider.getValue()));
@@ -82,19 +102,27 @@ public:
 			args.add(outfn);
 			if (m_child_process.start(args) == true)
 			{
-				if (m_child_process.waitForProcessToFinish(10000) == true)
+				if (m_child_process.waitForProcessToFinish(20000) == true)
 				{
-					InsertMedia(outfn.toRawUTF8(), 3);
-					UpdateArrange();
+					if (m_child_process.getExitCode() == 0)
+					{
+						InsertMedia(outfn.toRawUTF8(), 3);
+						UpdateArrange();
+					}
+					else
+						showBubbleMessage(m_child_process.readAllProcessOutput());
 				}
-				else
-				{
-					String output = m_child_process.readAllProcessOutput();
-					ShowConsoleMsg(output.toRawUTF8());
-				}
+				else showBubbleMessage("Waiting for process to finish failed");
 			}
-			else ShowConsoleMsg("Could not start child process\n");
+			else showBubbleMessage("Could not start child process");
 		}
+		else showBubbleMessage("Could not get valid project path");
+	}
+	void showBubbleMessage(String txt)
+	{
+		auto bub = new BubbleMessageComponent;
+		addChildComponent(bub);
+		bub->showAt(&m_apply_button, AttributedString(txt), 5000, true, true);
 	}
 private:
 	Slider m_time_ratio_slider;
@@ -102,4 +130,5 @@ private:
 	ComboBox m_crispness_combo;
 	TextButton m_apply_button;
 	ChildProcess m_child_process;
+	String m_rubberband_exe;
 };
