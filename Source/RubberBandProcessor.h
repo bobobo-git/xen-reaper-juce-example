@@ -60,12 +60,41 @@ public:
 	{
 		if (m_child_process.isRunning() == true)
 			return;
+		if (CountSelectedMediaItems(nullptr) == 0)
+			return;
+		MediaItem* item = GetSelectedMediaItem(nullptr, 0);
+		MediaItem_Take* take = GetActiveTake(item);
+		PCM_source* src = GetMediaItemTake_Source(take);
+		if (src == nullptr)
+			return;
 		StringArray args;
 		args.add("C:/Portable_Apps/rubber bantti/rubberband.exe");
 		args.add("-c" + String(m_crispness_combo.getSelectedId() - 1));
 		args.add("-t" + String(m_time_ratio_slider.getValue()));
 		args.add("-p" + String(m_pitch_slider.getValue()));
-		m_child_process.start(args);
+		String infn = CharPointer_UTF8(src->GetFileName());
+		char buf[2048];
+		GetProjectPath(buf, 2048);
+		if (strlen(buf) > 0)
+		{
+			String outfn = String(CharPointer_UTF8(buf)) + "/" + String(Time::getMillisecondCounterHiRes()) + ".wav";
+			args.add(infn);
+			args.add(outfn);
+			if (m_child_process.start(args) == true)
+			{
+				if (m_child_process.waitForProcessToFinish(10000) == true)
+				{
+					InsertMedia(outfn.toRawUTF8(), 3);
+					UpdateArrange();
+				}
+				else
+				{
+					String output = m_child_process.readAllProcessOutput();
+					ShowConsoleMsg(output.toRawUTF8());
+				}
+			}
+			else ShowConsoleMsg("Could not start child process\n");
+		}
 	}
 private:
 	Slider m_time_ratio_slider;
