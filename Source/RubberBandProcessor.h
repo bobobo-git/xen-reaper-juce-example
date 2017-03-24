@@ -120,7 +120,8 @@ public:
 		GetProjectPath(buf, 2048);
 		if (strlen(buf) > 0)
 		{
-			String outfn = String(CharPointer_UTF8(buf)) + "/" + String(Time::getMillisecondCounterHiRes()) + ".wav";
+			juce::Uuid uid;
+			String outfn = String(CharPointer_UTF8(buf)) + "/" + uid.toString() + ".wav";
 			args.add(infn);
 			args.add(outfn);
 			if (m_child_process.start(args) == true)
