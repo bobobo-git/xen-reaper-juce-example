@@ -98,10 +98,10 @@ public:
 			g_juce_inited = true;
 		}
 	}
-	Window(String title, int w, int h, bool resizable, Colour bgcolor)
-		: ResizableWindow(title,bgcolor,false)
+	Window(String title, Component* content, int w, int h, bool resizable, Colour bgcolor)
+		: ResizableWindow(title,bgcolor,false), m_content_component(content)
 	{
-		setContentNonOwned(&m_xy_component, true);
+		setContentOwned(m_content_component, true);
 		setTopLeftPosition(10, 60);
 		setSize(w, h);
 		setResizable(resizable, false);
@@ -123,12 +123,12 @@ public:
 		}
 		setVisible(false);
 #ifdef WIN32
-		BringWindowToTop(GetMainHwnd());
+		BringWindowToTop(GetMainHwnd()); 
 #endif
 	}
 	action_entry* m_assoc_action = nullptr;
 private:
-	XYContainer m_xy_component;
+	Component* m_content_component = nullptr;
 	TooltipWindow m_tooltipw;
 };
 
@@ -139,7 +139,7 @@ void toggleXYWindow(action_entry& ae)
 	Window::initGUIifNeeded();
 	if (g_xy_wnd == nullptr)
 	{
-		g_xy_wnd = std::make_unique<Window>("XY Control", 500, 500, true, Colours::darkgrey);
+		g_xy_wnd = std::make_unique<Window>("XY Control", new XYContainer, 500, 500, true, Colours::darkgrey);
 		// This call order is important, the window should not be set visible
 		// before adding it into the Reaper window hierarchy
 		// Currently this only works for Windows, OS-X needs some really annoying special handling
