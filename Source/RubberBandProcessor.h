@@ -47,6 +47,7 @@ public:
 		m_crispness_combo.addListener(this);
 		m_apply_button.addListener(this);
 		m_apply_button.setButtonText("Apply");
+		addChildComponent(&m_elapsed_label);
 		setSize(350, 200);
 	}
 	void resized() override
@@ -55,6 +56,7 @@ public:
 		m_pitch_slider.setBounds(1, m_time_ratio_slider.getBottom() + 2, getWidth() - 2, 22);
 		m_crispness_combo.setBounds(1, m_pitch_slider.getBottom() + 2, getWidth() - 2, 22);
 		m_apply_button.setBounds(1, m_crispness_combo.getBottom() + 2, 100, 22);
+		m_elapsed_label.setBounds(m_apply_button.getRight() + 2, m_apply_button.getY(), 200, 22);
 	}
 	void sliderValueChanged(Slider* slid) override
 	{
@@ -77,11 +79,14 @@ public:
 		{
 			if (m_processing == true)
 			{
+				double elapsed = Time::getMillisecondCounterHiRes() - m_process_start_time;
+				m_elapsed_label.setText(String(elapsed / 1000.0, 1) + " seconds elapsed",dontSendNotification);
 				if (m_child_process.isRunning() == false)
 				{
 					stopTimer(1);
 					m_processing = false;
 					m_apply_button.setEnabled(true);
+					m_elapsed_label.setVisible(false);
 					if (m_child_process.getExitCode() == 0)
 					{
 						InsertMedia(m_current_out_file.toRawUTF8(), 3);
@@ -132,25 +137,29 @@ public:
 				m_processing = true;
 				m_current_out_file = outfn;
 				m_apply_button.setEnabled(false);
+				m_elapsed_label.setVisible(true);
+				m_process_start_time = Time::getMillisecondCounterHiRes();
 				startTimer(1, 100);
 			}
 			else showBubbleMessage("Could not start child process");
 		}
 		else showBubbleMessage("Could not get valid project path");
 	}
-	void showBubbleMessage(String txt)
+	void showBubbleMessage(String txt, int ms=5000)
 	{
 		auto bub = new BubbleMessageComponent;
 		addChildComponent(bub);
-		bub->showAt(&m_apply_button, AttributedString(txt), 5000, true, true);
+		bub->showAt(&m_apply_button, AttributedString(txt), ms, true, true);
 	}
 private:
 	Slider m_time_ratio_slider;
 	Slider m_pitch_slider;
 	ComboBox m_crispness_combo;
 	TextButton m_apply_button;
+	Label m_elapsed_label;
 	ChildProcess m_child_process;
 	String m_rubberband_exe;
 	bool m_processing = false;
 	String m_current_out_file;
+	double m_process_start_time = 0.0;
 };

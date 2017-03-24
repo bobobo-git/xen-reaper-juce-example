@@ -177,7 +177,7 @@ void toggleRubberBandWindow(action_entry& ae)
 {
 	if (g_rubberband_wnd == nullptr)
 	{
-		g_rubberband_wnd = makeWindow("RubberBand", new RubberBandGUI, 400, 120, true, Colours::darkgrey);
+		g_rubberband_wnd = makeWindow("RubberBand", new RubberBandGUI, 400, 120, true, Colours::lightgrey);
 		g_rubberband_wnd->m_assoc_action = &ae;
 	}
 	g_rubberband_wnd->setVisible(!g_rubberband_wnd->isVisible());
