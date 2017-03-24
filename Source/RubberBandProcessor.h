@@ -20,7 +20,11 @@ public:
 		}
 		else
 		{
+#ifdef WIN32
 			FileChooser chooser("Choose RubberBand executable",File(),"*.exe");
+#else
+			FileChooser chooser("Choose RubberBand executable", File());
+#endif
 			if (chooser.browseForFileToOpen())
 			{
 				m_rubberband_exe = chooser.getResult().getFullPathName();
@@ -39,6 +43,7 @@ public:
 		m_pitch_slider.addListener(this);
 		for (int i = 0; i < 10; ++i)
 			m_crispness_combo.addItem(String(i), i + 1);
+		m_crispness_combo.setSelectedId(5);
 		m_crispness_combo.addListener(this);
 		m_apply_button.addListener(this);
 		m_apply_button.setButtonText("Apply");
@@ -68,11 +73,29 @@ public:
 	}
 	void timerCallback(int id) override
 	{
-
+		if (id == 1)
+		{
+			if (m_processing == true)
+			{
+				if (m_child_process.isRunning() == false)
+				{
+					stopTimer(1);
+					m_processing = false;
+					m_apply_button.setEnabled(true);
+					if (m_child_process.getExitCode() == 0)
+					{
+						InsertMedia(m_current_out_file.toRawUTF8(), 3);
+						UpdateArrange();
+					}
+					else
+						showBubbleMessage(m_child_process.readAllProcessOutput());
+				}
+			}
+		}
 	}
 	void processSelectedItem()
 	{
-		if (m_child_process.isRunning() == true)
+		if (m_processing == true)
 			return;
 		if (CountSelectedMediaItems(nullptr) == 0)
 		{
@@ -102,17 +125,10 @@ public:
 			args.add(outfn);
 			if (m_child_process.start(args) == true)
 			{
-				if (m_child_process.waitForProcessToFinish(20000) == true)
-				{
-					if (m_child_process.getExitCode() == 0)
-					{
-						InsertMedia(outfn.toRawUTF8(), 3);
-						UpdateArrange();
-					}
-					else
-						showBubbleMessage(m_child_process.readAllProcessOutput());
-				}
-				else showBubbleMessage("Waiting for process to finish failed");
+				m_processing = true;
+				m_current_out_file = outfn;
+				m_apply_button.setEnabled(false);
+				startTimer(1, 100);
 			}
 			else showBubbleMessage("Could not start child process");
 		}
@@ -131,4 +147,6 @@ private:
 	TextButton m_apply_button;
 	ChildProcess m_child_process;
 	String m_rubberband_exe;
+	bool m_processing = false;
+	String m_current_out_file;
 };
