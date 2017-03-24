@@ -126,6 +126,9 @@ public:
 			args.add(outfn);
 			if (m_child_process.start(args) == true)
 			{
+				// Child process now started but we won't wait for it to finish here because that would
+				// block the GUI event loop from running, so start the timer with id 1 that
+				// will check for the child process finish state
 				m_processing = true;
 				m_current_out_file = outfn;
 				m_apply_button.setEnabled(false);
