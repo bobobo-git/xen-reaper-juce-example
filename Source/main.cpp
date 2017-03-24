@@ -127,6 +127,16 @@ public:
 		BringWindowToTop(GetMainHwnd()); 
 #endif
 	}
+	void visibilityChanged() override
+	{
+		if (m_assoc_action != nullptr && m_assoc_action->m_togglestate!=CannotToggle)
+		{
+			if (isVisible() == true)
+				m_assoc_action->m_togglestate = ToggleOn;
+			else m_assoc_action->m_togglestate = ToggleOff;
+		}
+		ResizableWindow::visibilityChanged();
+	}
 	action_entry* m_assoc_action = nullptr;
 private:
 	Component* m_content_component = nullptr;
@@ -161,9 +171,6 @@ void toggleXYWindow(action_entry& ae)
 		g_xy_wnd->m_assoc_action = &ae;
 	}
 	g_xy_wnd->setVisible(!g_xy_wnd->isVisible());
-	if (g_xy_wnd->isVisible() == true)
-		ae.m_togglestate = ToggleOn;
-	else ae.m_togglestate = ToggleOff;
 }
 
 void toggleRubberBandWindow(action_entry& ae)
@@ -174,9 +181,6 @@ void toggleRubberBandWindow(action_entry& ae)
 		g_rubberband_wnd->m_assoc_action = &ae;
 	}
 	g_rubberband_wnd->setVisible(!g_rubberband_wnd->isVisible());
-	if (g_rubberband_wnd->isVisible() == true)
-		ae.m_togglestate = ToggleOn;
-	else ae.m_togglestate = ToggleOff;
 }
 
 extern "C"
