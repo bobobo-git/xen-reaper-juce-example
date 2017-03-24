@@ -7,6 +7,7 @@
 #include <string>
 #include "JuceHeader.h"
 #include "xy_component.h"
+#include "RubberBandProcessor.h"
 
 HINSTANCE g_hInst;
 HWND g_parent;
@@ -133,27 +134,47 @@ private:
 };
 
 std::unique_ptr<Window> g_xy_wnd;
+std::unique_ptr<Window> g_rubberband_wnd;
+
+std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int h, bool resizable, Colour backGroundColor)
+{
+	Window::initGUIifNeeded();
+	auto win = std::make_unique<Window>(name, component, w, h, resizable, backGroundColor);
+	// This call order is important, the window should not be set visible
+	// before adding it into the Reaper window hierarchy
+	// Currently this only works for Windows, OS-X needs some really annoying special handling
+	// not implemented yet
+#ifdef WIN32
+	win->addToDesktop(win->getDesktopWindowStyleFlags(), GetMainHwnd());
+#else
+	win->addToDesktop(win->getDesktopWindowStyleFlags(), 0);
+	win->setAlwaysOnTop(true);
+#endif
+	return win;
+}
 
 void toggleXYWindow(action_entry& ae)
 {
-	Window::initGUIifNeeded();
 	if (g_xy_wnd == nullptr)
 	{
-		g_xy_wnd = std::make_unique<Window>("XY Control", new XYContainer, 500, 500, true, Colours::darkgrey);
-		// This call order is important, the window should not be set visible
-		// before adding it into the Reaper window hierarchy
-		// Currently this only works for Windows, OS-X needs some really annoying special handling
-		// not implemented yet
-#ifdef WIN32
-		g_xy_wnd->addToDesktop(g_xy_wnd->getDesktopWindowStyleFlags(), GetMainHwnd());
-#else
-		g_xy_wnd->addToDesktop(g_xy_wnd->getDesktopWindowStyleFlags(), 0);
-		g_xy_wnd->setAlwaysOnTop(true);
-#endif
+		g_xy_wnd = makeWindow("XY Control", new XYContainer, 500, 520, true, Colours::darkgrey);
 		g_xy_wnd->m_assoc_action = &ae;
 	}
 	g_xy_wnd->setVisible(!g_xy_wnd->isVisible());
 	if (g_xy_wnd->isVisible() == true)
+		ae.m_togglestate = ToggleOn;
+	else ae.m_togglestate = ToggleOff;
+}
+
+void toggleRubberBandWindow(action_entry& ae)
+{
+	if (g_rubberband_wnd == nullptr)
+	{
+		g_rubberband_wnd = makeWindow("RubberBand", new RubberBandGUI, 400, 120, true, Colours::darkgrey);
+		g_rubberband_wnd->m_assoc_action = &ae;
+	}
+	g_rubberband_wnd->setVisible(!g_rubberband_wnd->isVisible());
+	if (g_rubberband_wnd->isVisible() == true)
 		ae.m_togglestate = ToggleOn;
 	else ae.m_togglestate = ToggleOff;
 }
@@ -175,6 +196,10 @@ extern "C"
 			{
 				toggleXYWindow(ae);
 			});
+			add_action("JUCE test : Show/hide RubberBand", "JUCETEST_SHOW_RUBBERBAND", ToggleOff, [](action_entry& ae)
+			{
+				toggleRubberBandWindow(ae);
+			});
 			rec->Register("hookcommand", (void*)hookCommandProc);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
 			return 1; // our plugin registered, return success
@@ -184,6 +209,7 @@ extern "C"
 			if (g_juce_inited == true)
 			{
 				g_xy_wnd = nullptr;
+				g_rubberband_wnd = nullptr;
 				shutdownJuce_GUI();
 			}
 			return 0;
