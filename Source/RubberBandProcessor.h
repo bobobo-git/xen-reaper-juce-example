@@ -2,6 +2,42 @@
 
 #include "JuceHeader.h"
 
+String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans, double outsr)
+{
+	double t0 = GetAudioAccessorStartTime(acc);
+	double t1 = GetAudioAccessorEndTime(acc);
+	double len = t1 - t0;
+	int64_t lenframes = len*outsr;
+	int bufsize = 32768;
+	std::vector<double> accbuf(outchans*bufsize);
+	std::vector<double> sinkbuf(outchans*bufsize);
+	std::vector<double*> sinkbufptrs(outchans);
+	for (int i = 0; i < outchans; ++i)
+		sinkbufptrs[i] = &sinkbuf[i*bufsize];
+	char cfg[] = { 'e','v','a','w', 32, 0 };
+	auto sink = std::unique_ptr<PCM_sink>(PCM_Sink_Create(outfilename.toRawUTF8(),
+		cfg, sizeof(cfg), outchans, outsr, true));
+	if (sink != nullptr)
+	{
+		int64_t counter = 0;
+		while (counter < lenframes)
+		{
+			GetAudioAccessorSamples(acc, outsr, outchans, (double)counter / outsr, bufsize, accbuf.data());
+			for (int i = 0; i < outchans; ++i)
+			{
+				for (int j = 0; j < bufsize; ++j)
+				{
+					sinkbufptrs[i][j] = accbuf[j*outchans + i];
+				}
+			}
+			sink->WriteDoubles(sinkbufptrs.data(), bufsize, outchans, 0, 1);
+			counter += bufsize;
+		}
+	}
+	else return "Could not create sink";
+	return String();
+}
+
 class RubberBandGUI : public Component, 
 	public MultiTimer, 
 	public Slider::Listener,
@@ -79,6 +115,7 @@ public:
 					m_processing = false;
 					m_apply_button.setEnabled(true);
 					m_elapsed_label.setVisible(false);
+					deleteAccessorTempFile();
 					if (m_child_process.getExitCode() == 0)
 					{
 						InsertMedia(m_current_out_file.toRawUTF8(), 3);
@@ -117,23 +154,40 @@ public:
 		GetProjectPath(buf, 2048);
 		if (strlen(buf) > 0)
 		{
-			juce::Uuid uid;
-			String outfn = String(CharPointer_UTF8(buf)) + "/" + uid.toString() + ".wav";
-			args.add(infn);
-			args.add(outfn);
-			if (m_child_process.start(args) == true)
+			String outfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
+			auto acc = std::shared_ptr<AudioAccessor>(CreateTakeAudioAccessor(take), [](AudioAccessor* aa) 
+			{ DestroyAudioAccessor(aa); });
+			if (acc != nullptr)
 			{
-				// Child process now started but we won't wait for it to finish here because that would
-				// block the GUI event loop from running, so start the timer with id 1 that
-				// will check for the child process finish state
-				m_processing = true;
-				m_current_out_file = outfn;
-				m_apply_button.setEnabled(false);
-				m_elapsed_label.setVisible(true);
-				m_process_start_time = Time::getMillisecondCounterHiRes();
-				startTimer(1, 100);
+				m_accessor_temp_file = String();
+				String tempfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
+				String err = renderAudioAccessor(acc.get(), tempfn, src->GetNumChannels(), src->GetSampleRate());
+				if (err.isEmpty() == true)
+				{
+					args.add(tempfn);
+					args.add(outfn);
+					if (m_child_process.start(args) == true)
+					{
+						// Child process now started but we won't wait for it to finish here because that would
+						// block the GUI event loop from running, so start the timer with id 1 that
+						// will check for the child process finish state
+						m_processing = true;
+						m_current_out_file = outfn;
+						m_accessor_temp_file = tempfn;
+						m_apply_button.setEnabled(false);
+						m_elapsed_label.setVisible(true);
+						m_process_start_time = Time::getMillisecondCounterHiRes();
+						startTimer(1, 100);
+					}
+					else
+					{
+						deleteAccessorTempFile();
+						showBubbleMessage("Could not start child process");
+					}
+				}
+				else showBubbleMessage(err);
 			}
-			else showBubbleMessage("Could not start child process");
+			else showBubbleMessage("Could not create AudioAccessor");
 		}
 		else showBubbleMessage("Could not get valid project path");
 	}
@@ -154,5 +208,14 @@ private:
 	String m_rubberband_exe;
 	bool m_processing = false;
 	String m_current_out_file;
+	String m_accessor_temp_file;
 	double m_process_start_time = 0.0;
+	void deleteAccessorTempFile()
+	{
+		if (m_accessor_temp_file.isEmpty() == true)
+			return;
+		File temp(m_accessor_temp_file);
+		temp.deleteFile();
+		m_accessor_temp_file = String();
+	}
 };
