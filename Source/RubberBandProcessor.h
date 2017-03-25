@@ -1,6 +1,8 @@
 #pragma once
 
 #include "JuceHeader.h"
+#include <atomic>
+#include <thread>
 
 String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans, double outsr)
 {
@@ -85,6 +87,7 @@ public:
 		m_apply_button.setButtonText("Apply");
 		addChildComponent(&m_elapsed_label);
 		setSize(350, 200);
+		startTimer(1, 100);
 	}
 	void resized() override
 	{
@@ -103,28 +106,10 @@ public:
 	}
 	void timerCallback(int id) override
 	{
-		if (id == 1)
+		if (id == 1 && m_processing == true)
 		{
-			if (m_processing == true)
-			{
-				double elapsed = Time::getMillisecondCounterHiRes() - m_process_start_time;
-				m_elapsed_label.setText(String(elapsed / 1000.0, 1) + " seconds elapsed",dontSendNotification);
-				if (m_child_process.isRunning() == false)
-				{
-					stopTimer(1);
-					m_processing = false;
-					m_apply_button.setEnabled(true);
-					m_elapsed_label.setVisible(false);
-					deleteAccessorTempFile();
-					if (m_child_process.getExitCode() == 0)
-					{
-						InsertMedia(m_current_out_file.toRawUTF8(), 3);
-						UpdateArrange();
-					}
-					else
-						showBubbleMessage(m_child_process.readAllProcessOutput());
-				}
-			}
+			double elapsed = Time::getMillisecondCounterHiRes() - m_process_start_time;
+			m_elapsed_label.setText(String(elapsed / 1000.0, 1) + " seconds elapsed",dontSendNotification);
 		}
 	}
 	void processSelectedItem()
@@ -136,67 +121,93 @@ public:
 			showBubbleMessage("No media item selected");
 			return;
 		}
-		MediaItem* item = GetSelectedMediaItem(nullptr, 0);
-		MediaItem_Take* take = GetActiveTake(item);
-		PCM_source* src = GetMediaItemTake_Source(take);
-		if (src == nullptr)
+		auto task = [this]()
 		{
-			showBubbleMessage("Could not get media item take source");
-			return;
-		}
-		StringArray args;
-		args.add(m_rubberband_exe);
-		args.add("-c" + String(m_crispness_combo.getSelectedId() - 1));
-		args.add("-t" + String(m_time_ratio_slider.getValue()));
-		args.add("-p" + String(m_pitch_slider.getValue()));
-		String infn = CharPointer_UTF8(src->GetFileName());
-		char buf[2048];
-		GetProjectPath(buf, 2048);
-		if (strlen(buf) > 0)
-		{
-			String outfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
-			auto acc = std::shared_ptr<AudioAccessor>(CreateTakeAudioAccessor(take), [](AudioAccessor* aa) 
-			{ DestroyAudioAccessor(aa); });
-			if (acc != nullptr)
+			auto compstatefunc = [this]() 
 			{
-				m_accessor_temp_file = String();
-				String tempfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
-				String err = renderAudioAccessor(acc.get(), tempfn, src->GetNumChannels(), src->GetSampleRate());
-				if (err.isEmpty() == true)
+				MessageManager::callAsync([this]()
 				{
-					args.add(tempfn);
-					args.add(outfn);
-					if (m_child_process.start(args) == true)
-					{
-						// Child process now started but we won't wait for it to finish here because that would
-						// block the GUI event loop from running, so start the timer with id 1 that
-						// will check for the child process finish state
-						m_processing = true;
-						m_current_out_file = outfn;
-						m_accessor_temp_file = tempfn;
-						m_apply_button.setEnabled(false);
-						m_elapsed_label.setVisible(true);
-						m_process_start_time = Time::getMillisecondCounterHiRes();
-						startTimer(1, 100);
-					}
-					else
-					{
-						deleteAccessorTempFile();
-						showBubbleMessage("Could not start child process");
-					}
-				}
-				else showBubbleMessage(err);
+					m_apply_button.setEnabled(true);
+					m_elapsed_label.setVisible(false);
+				});
+			};
+			MediaItem* item = GetSelectedMediaItem(nullptr, 0);
+			MediaItem_Take* take = GetActiveTake(item);
+			PCM_source* src = GetMediaItemTake_Source(take);
+			if (src == nullptr)
+			{
+				showBubbleMessage("Could not get media item take source");
+				compstatefunc();
+				return;
 			}
-			else showBubbleMessage("Could not create AudioAccessor");
-		}
-		else showBubbleMessage("Could not get valid project path");
+			m_processing = true;
+			m_process_start_time = Time::getMillisecondCounterHiRes();
+			StringArray args;
+			args.add(m_rubberband_exe);
+			args.add("-c" + String(m_crispness_combo.getSelectedId() - 1));
+			args.add("-t" + String(m_time_ratio_slider.getValue()));
+			args.add("-p" + String(m_pitch_slider.getValue()));
+			String infn = CharPointer_UTF8(src->GetFileName());
+			char buf[2048];
+			GetProjectPath(buf, 2048);
+			if (strlen(buf) > 0)
+			{
+				String outfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
+				auto acc = std::shared_ptr<AudioAccessor>(CreateTakeAudioAccessor(take), [](AudioAccessor* aa)
+				{ DestroyAudioAccessor(aa); });
+				if (acc != nullptr)
+				{
+					String tempfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
+					String err = renderAudioAccessor(acc.get(), tempfn, src->GetNumChannels(), src->GetSampleRate());
+					if (err.isEmpty() == true)
+					{
+						args.add(tempfn);
+						args.add(outfn);
+						if (m_child_process.start(args) == true)
+						{
+							m_child_process.waitForProcessToFinish(60000);
+							MessageManager::callAsync([outfn,tempfn,this]()
+							{
+								m_processing = false;
+								deleteFileIfExists(tempfn);
+								if (m_child_process.getExitCode() == 0)
+								{
+									InsertMedia(outfn.toRawUTF8(), 3);
+									UpdateArrange();
+								}
+								else
+									showBubbleMessage(m_child_process.readAllProcessOutput());
+							});
+							
+						}
+						else
+						{
+							deleteFileIfExists(tempfn);
+							showBubbleMessage("Could not start child process");
+						}
+					}
+					else showBubbleMessage(err);
+				}
+				else showBubbleMessage("Could not create AudioAccessor");
+			}
+			else showBubbleMessage("Could not get valid project path");
+			m_processing = false;
+			compstatefunc();
+		};
+		std::thread th(task);
+		th.detach();
+		m_apply_button.setEnabled(false);
+		m_elapsed_label.setVisible(true);
 	}
 	void showBubbleMessage(String txt, int ms=5000)
 	{
-		if (txt.isEmpty() == true) return;
-		auto bub = new BubbleMessageComponent;
-		addChildComponent(bub);
-		bub->showAt(&m_apply_button, AttributedString(txt), ms, true, true);
+		MessageManager::callAsync([this,txt,ms]()
+		{
+			if (txt.isEmpty() == true) return;
+			auto bub = new BubbleMessageComponent;
+			addChildComponent(bub);
+			bub->showAt(&m_apply_button, AttributedString(txt), ms, true, true);
+		});
 	}
 private:
 	Slider m_time_ratio_slider;
@@ -206,16 +217,14 @@ private:
 	Label m_elapsed_label;
 	ChildProcess m_child_process;
 	String m_rubberband_exe;
-	bool m_processing = false;
-	String m_current_out_file;
-	String m_accessor_temp_file;
+	std::atomic<bool> m_processing{ false };
 	double m_process_start_time = 0.0;
-	void deleteAccessorTempFile()
+	void deleteFileIfExists(String fn)
 	{
-		if (m_accessor_temp_file.isEmpty() == true)
+		if (fn.isEmpty() == true)
 			return;
-		File temp(m_accessor_temp_file);
-		temp.deleteFile();
-		m_accessor_temp_file = String();
+		File temp(fn);
+		if (temp.existsAsFile()==true)
+			temp.deleteFile();
 	}
 };
