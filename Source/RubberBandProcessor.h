@@ -41,7 +41,7 @@ public:
 		m_pitch_slider.setRange(-24.0, 24.0);
 		m_pitch_slider.setValue(-4.0);
 		m_pitch_slider.addListener(this);
-		for (int i = 0; i < 10; ++i)
+		for (int i = 0; i < 7; ++i)
 			m_crispness_combo.addItem(String(i), i + 1);
 		m_crispness_combo.setSelectedId(5);
 		m_crispness_combo.addListener(this);
