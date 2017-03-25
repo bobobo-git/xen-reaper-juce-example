@@ -15,8 +15,7 @@ public:
 	{
 		if (HasExtState("xenrubberband", "exelocation") == true)
 		{
-			const char* exefn = GetExtState("xenrubberband", "exelocation");
-			m_rubberband_exe = String(CharPointer_UTF8(exefn));
+			m_rubberband_exe = String(CharPointer_UTF8(GetExtState("xenrubberband", "exelocation")));
 		}
 		else
 		{
@@ -35,10 +34,11 @@ public:
 		addAndMakeVisible(&m_pitch_slider);
 		addAndMakeVisible(&m_crispness_combo);
 		addAndMakeVisible(&m_apply_button);
-		m_time_ratio_slider.setRange(0.1, 10.0);
+		m_time_ratio_slider.setRange(0.1, 10.0, 0.001);
+		m_time_ratio_slider.setSkewFactorFromMidPoint(1.0);
 		m_time_ratio_slider.setValue(2.0);
 		m_time_ratio_slider.addListener(this);
-		m_pitch_slider.setRange(-24.0, 24.0);
+		m_pitch_slider.setRange(-24.0, 24.0, 0.1);
 		m_pitch_slider.setValue(-4.0);
 		m_pitch_slider.addListener(this);
 		for (int i = 0; i < 7; ++i)
@@ -58,20 +58,12 @@ public:
 		m_apply_button.setBounds(1, m_crispness_combo.getBottom() + 2, 100, 22);
 		m_elapsed_label.setBounds(m_apply_button.getRight() + 2, m_apply_button.getY(), 200, 22);
 	}
-	void sliderValueChanged(Slider* slid) override
-	{
-
-	}
-	void comboBoxChanged(ComboBox* combo) override
-	{
-
-	}
+	void sliderValueChanged(Slider* slid) override {}
+	void comboBoxChanged(ComboBox* combo) override {}
 	void buttonClicked(Button* but) override
 	{
 		if (but == &m_apply_button)
-		{
 			processSelectedItem();
-		}
 	}
 	void timerCallback(int id) override
 	{
@@ -147,6 +139,7 @@ public:
 	}
 	void showBubbleMessage(String txt, int ms=5000)
 	{
+		if (txt.isEmpty() == true) return;
 		auto bub = new BubbleMessageComponent;
 		addChildComponent(bub);
 		bub->showAt(&m_apply_button, AttributedString(txt), ms, true, true);
