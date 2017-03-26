@@ -165,15 +165,11 @@ void toggleXYWindow(action_entry& ae)
 	g_xy_wnd->setVisible(!g_xy_wnd->isVisible());
 }
 
-// Nasty, this way there can only be one GUI open...
-RubberBandGUI* g_rubberband_component = nullptr;
-
 void toggleRubberBandWindow(action_entry& ae)
 {
 	if (g_rubberband_wnd == nullptr)
 	{
-		g_rubberband_component = new RubberBandGUI;
-		g_rubberband_wnd = makeWindow("RubberBand", g_rubberband_component, 400, 120, true, Colours::lightgrey);
+		g_rubberband_wnd = makeWindow("RubberBand", new RubberBandGUI, 400, 120, true, Colours::lightgrey);
 		g_rubberband_wnd->m_assoc_action = &ae;
 	}
 	g_rubberband_wnd->setVisible(!g_rubberband_wnd->isVisible());
