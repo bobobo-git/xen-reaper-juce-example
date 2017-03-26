@@ -222,11 +222,9 @@ extern "C"
 				toggleRubberBandWindow(ae);
 			});
 			
-			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST", CannotToggle, [](action_entry& ae)
-			{
-				processRubberBandUsingLastSettings(ae);
-			});
-
+			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST",
+				CannotToggle, processRubberBandUsingLastSettings);
+			
 			rec->Register("hookcommand", (void*)hookCommandProc);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
 			return 1; // our plugin registered, return success
