@@ -6,7 +6,7 @@ XYComponent::XYComponent() :
 	m_y_skew_slider(Slider::LinearHorizontal, Slider::TextBoxRight)
 {
 	setSize(100, 100);
-	startTimer(1,50);
+	startTimer(20000,50);
 	m_x_skew_slider.setRange(0.1, 4.0);
 	m_y_skew_slider.setRange(0.1, 4.0);
 	m_x_skew_slider.addListener(this);
@@ -15,7 +15,7 @@ XYComponent::XYComponent() :
 
 void XYComponent::timerCallback(int id)
 {
-	if (id == 1)
+	if (id == 20000)
 	{
 		if (m_xymode == XYMode::Constant)
 			return;
@@ -36,14 +36,14 @@ void XYComponent::timerCallback(int id)
 			repaint();
 		}
 	}
-	if (id == 2)
+	if (id == 20001)
 	{
 		m_path_finished = true;
 		if (m_auto_close_path == true)
 			m_path.closeSubPath();
 		repaint();
 		m_tpos = Time::getMillisecondCounterHiRes();
-		stopTimer(2);
+		stopTimer(20001);
 	}
 }
 
@@ -72,7 +72,7 @@ void XYComponent::mouseDown(const MouseEvent & ev)
 	{
 		if (isTimerRunning(2)==false)
 			m_path.clear();
-		stopTimer(2);
+		stopTimer(20001);
 		m_path.startNewSubPath(1.0 / getWidth()*ev.x, 1.0 / getHeight()*ev.y);
 		m_path_finished = false;
 		repaint();
@@ -119,7 +119,7 @@ void XYComponent::mouseUp(const MouseEvent & ev)
 		return;
 	if (m_xymode == XYMode::Constant)
 		return;
-	startTimer(2, 2000);
+	startTimer(20001, 2000);
 }
 
 void XYComponent::setPathDuration(double len)
@@ -441,25 +441,26 @@ XYComponentWithSliders::XYComponentWithSliders() :
 	m_slid_timewarp.setValue(0.0);
 	m_slid_timewarp.addListener(this);
 	m_slid_timewarp.setTooltip("Warp path playback (Negative decelerates/Positive accelerates");
-	addAndMakeVisible(&m_xycomp);
+	m_xycomp = std::make_unique<XYComponent>();
+	addAndMakeVisible(m_xycomp.get());
 }
 
 void XYComponentWithSliders::sliderValueChanged(Slider * slid)
 {
 	if (slid == &m_slid_pathdur)
-		m_xycomp.setPathDuration(slid->getValue()*1000.0);
+		m_xycomp->setPathDuration(slid->getValue()*1000.0);
 	if (slid == &m_slid_timewarp)
-		m_xycomp.setTimeWarp(slid->getValue());
+		m_xycomp->setTimeWarp(slid->getValue());
 }
 
 void XYComponentWithSliders::resized()
 {
 	m_slid_pathdur.setBounds(1, 1, 50, 50);
 	m_slid_timewarp.setBounds(52, 1, 50, 50);
-	m_xycomp.setBounds(1, 55, getWidth() - 2, getHeight() - 55);
+	m_xycomp->setBounds(1, 55, getWidth() - 2, getHeight() - 55);
 }
 
 void XYComponentWithSliders::showOptionsMenu()
 {
-	m_xycomp.showOptionsMenu();
+	m_xycomp->showOptionsMenu();
 }

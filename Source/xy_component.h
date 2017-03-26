@@ -77,7 +77,9 @@ public:
 	//GUID* m_fx_GUID;
 };
 
-class XYComponent : public Component, public MultiTimer, public Slider::Listener
+class XYComponent : public Component, 
+	public Slider::Listener,
+	public MultiTimer
 {
 public:
 	XYComponent();
@@ -90,13 +92,12 @@ public:
 	void setPathDuration(double len);
 	void setTimeWarp(double w);
 	void showOptionsMenu();
-private:
 	void sliderValueChanged(Slider* slid) override;
+private:
 	double m_x_pos = 0.5;
 	double m_y_pos = 0.5;
 	FXAssignment m_x_assignment;
 	FXAssignment m_y_assignment;
-	Path m_path;
 	double m_tpos = 0.0;
 	bool m_path_finished = false;
 	bool m_auto_close_path = true;
@@ -105,6 +106,7 @@ private:
 	XYMode m_xymode = XYMode::Path;
 	Slider m_x_skew_slider;
 	Slider m_y_skew_slider;
+	Path m_path;
 };
 
 class XYComponentWithSliders : public Component, public Slider::Listener
@@ -117,7 +119,7 @@ public:
 private:
 	Slider m_slid_pathdur;
 	Slider m_slid_timewarp;
-	XYComponent m_xycomp;
+	std::unique_ptr<XYComponent> m_xycomp;
 };
 
 class XYContainer : public Component, public Button::Listener

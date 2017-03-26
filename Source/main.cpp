@@ -59,16 +59,6 @@ std::shared_ptr<action_entry> add_action(std::string name, std::string id, toggl
 	return entry;
 }
 
-bool hookCommandProc(int command, int flag) {
-	for (auto& e : g_actions) {
-		if (e->m_command_id != 0 && e->m_command_id == command) {
-			e->m_func(*e);
-			return true;
-		}
-	}
-	return false; // failed to run relevant action
-}
-
 // Reaper calls back to this when it wants to know an actions's toggle state
 int toggleActionCallback(int command_id)
 {
@@ -183,6 +173,17 @@ void toggleRubberBandWindow(action_entry& ae)
 	g_rubberband_wnd->setVisible(!g_rubberband_wnd->isVisible());
 }
 
+bool hookCommandProc(int command, int flag) {
+	for (auto& e : g_actions) {
+		if (e->m_command_id != 0 && e->m_command_id == command) {
+			Window::initGUIifNeeded();
+			e->m_func(*e);
+			return true;
+		}
+	}
+	return false; // failed to run relevant action
+}
+
 extern "C"
 {
 	REAPER_PLUGIN_DLL_EXPORT int REAPER_PLUGIN_ENTRYPOINT(REAPER_PLUGIN_HINSTANCE hInstance, reaper_plugin_info_t *rec) {
@@ -217,6 +218,7 @@ extern "C"
 				g_xy_wnd = nullptr;
 				g_rubberband_wnd = nullptr;
 				shutdownJuce_GUI();
+				g_juce_inited = false;
 			}
 			return 0;
 		}
