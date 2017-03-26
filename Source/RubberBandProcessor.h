@@ -174,8 +174,8 @@ public:
 		m_pitch_slider.addListener(this);
 		
         m_crispness_combo.addItem("Mushy", 1);
-        m_crispness_combo.addItem("Smooth", 2);
-        m_crispness_combo.addItem("Mushy", 3);
+        m_crispness_combo.addItem("Piano", 2);
+        m_crispness_combo.addItem("Smooth", 3);
         m_crispness_combo.addItem("Balanced multitimbral mixture",4);
         m_crispness_combo.addItem("Unpitched percussion with stable notes",5);
         m_crispness_combo.addItem("Crisp monophonic instrumental",6);
