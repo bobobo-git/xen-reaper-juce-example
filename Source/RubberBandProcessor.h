@@ -4,6 +4,29 @@
 #include <atomic>
 #include <thread>
 
+String getRubberBandExeLocation()
+{
+	if (HasExtState("xenrubberband", "exelocation") == true)
+	{
+		return String(CharPointer_UTF8(GetExtState("xenrubberband", "exelocation")));
+	}
+	else
+	{
+#ifdef WIN32
+		FileChooser chooser("Choose RubberBand executable", File(), "*.exe");
+#else
+		FileChooser chooser("Choose RubberBand executable", File());
+#endif
+		if (chooser.browseForFileToOpen())
+		{
+			String temp = chooser.getResult().getFullPathName();
+			SetExtState("xenrubberband", "exelocation", temp.toRawUTF8(), true);
+			return temp;
+		}
+	}
+	return String();
+}
+
 String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans, double outsr)
 {
 	double t0 = GetAudioAccessorStartTime(acc);
@@ -40,6 +63,91 @@ String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans,
 	return String();
 }
 
+void deleteFileIfExists(String fn)
+{
+	if (fn.isEmpty() == true)
+		return;
+	File temp(fn);
+	if (temp.existsAsFile() == true)
+		temp.deleteFile();
+}
+
+String getTempFileNameAtProjectDirectory(String extension)
+{
+	char buf[4096];
+	GetProjectPath(buf, 4096);
+	return String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + extension;
+}
+
+struct RubberBandParams
+{
+	double m_time_ratio = 1.0;
+	double m_pitch = 0.0;
+	int m_crispness = 5;
+	String m_outfn;
+	String m_rb_exe;
+};
+
+bool processItemWithRubberBandAsync(MediaItem* srcitem, 
+	RubberBandParams params, 
+	std::function<void(String)> completionHandler)
+{
+	auto task = [srcitem,params,completionHandler]()
+	{
+		MediaItem* item = srcitem;
+		MediaItem_Take* take = GetActiveTake(item);
+		PCM_source* src = GetMediaItemTake_Source(take);
+		if (src == nullptr)
+		{
+			completionHandler("Could not get media item take source");
+			return;
+		}
+		StringArray args;
+		args.add(params.m_rb_exe);
+		args.add("-c" + String(params.m_crispness));
+		args.add("-t" + String(params.m_time_ratio));
+		args.add("-p" + String(params.m_pitch));
+		String infn = CharPointer_UTF8(src->GetFileName());
+		String outfn = params.m_outfn;
+		auto acc = std::shared_ptr<AudioAccessor>(CreateTakeAudioAccessor(take), [](AudioAccessor* aa)
+		{ DestroyAudioAccessor(aa); });
+		if (acc != nullptr)
+		{
+			String tempfn = getTempFileNameAtProjectDirectory(".wav");
+			String err = renderAudioAccessor(acc.get(), tempfn, src->GetNumChannels(), src->GetSampleRate());
+			if (err.isEmpty() == true)
+			{
+				args.add(tempfn);
+				args.add(outfn);
+				ChildProcess childproc;
+				if (childproc.start(args) == true)
+				{
+					childproc.waitForProcessToFinish(60000);
+					deleteFileIfExists(tempfn);
+					if (childproc.getExitCode() == 0)
+					{
+						completionHandler(String());
+					}
+					else
+						completionHandler(childproc.readAllProcessOutput());
+				}
+				else
+				{
+					deleteFileIfExists(tempfn);
+					completionHandler("Could not start child process");
+				}
+			}
+			else completionHandler(err);
+		}
+		else completionHandler("Could not create AudioAccessor");
+		
+		
+	};
+	std::thread th(task);
+	th.detach();
+	return true;
+}
+
 class RubberBandGUI : public Component, 
 	public MultiTimer, 
 	public Slider::Listener,
@@ -51,23 +159,7 @@ public:
 		m_time_ratio_slider(Slider::LinearHorizontal,Slider::TextBoxRight),
 		m_pitch_slider(Slider::LinearHorizontal, Slider::TextBoxRight)
 	{
-		if (HasExtState("xenrubberband", "exelocation") == true)
-		{
-			m_rubberband_exe = String(CharPointer_UTF8(GetExtState("xenrubberband", "exelocation")));
-		}
-		else
-		{
-#ifdef WIN32
-			FileChooser chooser("Choose RubberBand executable",File(),"*.exe");
-#else
-			FileChooser chooser("Choose RubberBand executable", File());
-#endif
-			if (chooser.browseForFileToOpen())
-			{
-				m_rubberband_exe = chooser.getResult().getFullPathName();
-				SetExtState("xenrubberband", "exelocation", m_rubberband_exe.toRawUTF8(), true);
-			}
-		}
+		m_rubberband_exe = getRubberBandExeLocation();
 		addAndMakeVisible(&m_time_ratio_slider);
 		addAndMakeVisible(&m_pitch_slider);
 		addAndMakeVisible(&m_crispness_combo);
@@ -121,81 +213,33 @@ public:
 			showBubbleMessage("No media item selected");
 			return;
 		}
-		auto task = [this]()
+		RubberBandParams params;
+		params.m_time_ratio = m_time_ratio_slider.getValue();
+		params.m_pitch = m_pitch_slider.getValue();
+		params.m_crispness = m_crispness_combo.getSelectedId() - 1;
+		params.m_rb_exe = m_rubberband_exe;
+		params.m_outfn = getTempFileNameAtProjectDirectory(".wav");
+		getLastUsedParameters() = params;
+		auto completionHandler = [this,params](String err)
 		{
-			auto compstatefunc = [this]() 
-			{
-				MessageManager::callAsync([this]()
-				{
-					m_apply_button.setEnabled(true);
-					m_elapsed_label.setVisible(false);
-				});
-			};
-			MediaItem* item = GetSelectedMediaItem(nullptr, 0);
-			MediaItem_Take* take = GetActiveTake(item);
-			PCM_source* src = GetMediaItemTake_Source(take);
-			if (src == nullptr)
-			{
-				showBubbleMessage("Could not get media item take source");
-				compstatefunc();
-				return;
-			}
-			m_processing = true;
-			m_process_start_time = Time::getMillisecondCounterHiRes();
-			StringArray args;
-			args.add(m_rubberband_exe);
-			args.add("-c" + String(m_crispness_combo.getSelectedId() - 1));
-			args.add("-t" + String(m_time_ratio_slider.getValue()));
-			args.add("-p" + String(m_pitch_slider.getValue()));
-			String infn = CharPointer_UTF8(src->GetFileName());
-			char buf[2048];
-			GetProjectPath(buf, 2048);
-			if (strlen(buf) > 0)
-			{
-				String outfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
-				auto acc = std::shared_ptr<AudioAccessor>(CreateTakeAudioAccessor(take), [](AudioAccessor* aa)
-				{ DestroyAudioAccessor(aa); });
-				if (acc != nullptr)
-				{
-					String tempfn = String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + ".wav";
-					String err = renderAudioAccessor(acc.get(), tempfn, src->GetNumChannels(), src->GetSampleRate());
-					if (err.isEmpty() == true)
-					{
-						args.add(tempfn);
-						args.add(outfn);
-						if (m_child_process.start(args) == true)
-						{
-							m_child_process.waitForProcessToFinish(60000);
-							MessageManager::callAsync([outfn,tempfn,this]()
-							{
-								m_processing = false;
-								deleteFileIfExists(tempfn);
-								if (m_child_process.getExitCode() == 0)
-								{
-									InsertMedia(outfn.toRawUTF8(), 3);
-									UpdateArrange();
-								}
-								else
-									showBubbleMessage(m_child_process.readAllProcessOutput());
-							});
-							
-						}
-						else
-						{
-							deleteFileIfExists(tempfn);
-							showBubbleMessage("Could not start child process");
-						}
-					}
-					else showBubbleMessage(err);
-				}
-				else showBubbleMessage("Could not create AudioAccessor");
-			}
-			else showBubbleMessage("Could not get valid project path");
 			m_processing = false;
-			compstatefunc();
+			if (err.isEmpty() == false)
+				showBubbleMessage(err);
+			MessageManager::callAsync([this, err, params]()
+			{
+				m_apply_button.setEnabled(true);
+				m_elapsed_label.setVisible(false);
+				if (err.isEmpty() == true)
+				{
+					InsertMedia(params.m_outfn.toRawUTF8(), 3);
+					UpdateArrange();
+				}
+			});
+			
 		};
-		std::thread th(task);
-		th.detach();
+		m_process_start_time = Time::getMillisecondCounterHiRes();
+		m_processing = true;
+		processItemWithRubberBandAsync(GetSelectedMediaItem(nullptr, 0), params, completionHandler);
 		m_apply_button.setEnabled(false);
 		m_elapsed_label.setVisible(true);
 	}
@@ -209,6 +253,11 @@ public:
 			bub->showAt(&m_apply_button, AttributedString(txt), ms, true, true);
 		});
 	}
+	static RubberBandParams& getLastUsedParameters()
+	{
+		static RubberBandParams s_params;
+		return s_params;
+	}
 private:
 	Slider m_time_ratio_slider;
 	Slider m_pitch_slider;
@@ -219,12 +268,5 @@ private:
 	String m_rubberband_exe;
 	std::atomic<bool> m_processing{ false };
 	double m_process_start_time = 0.0;
-	void deleteFileIfExists(String fn)
-	{
-		if (fn.isEmpty() == true)
-			return;
-		File temp(fn);
-		if (temp.existsAsFile()==true)
-			temp.deleteFile();
-	}
+	
 };

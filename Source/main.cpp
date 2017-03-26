@@ -181,13 +181,28 @@ void toggleRubberBandWindow(action_entry& ae)
 
 void processRubberBandUsingLastSettings(action_entry&)
 {
-	if (g_rubberband_wnd != nullptr && g_rubberband_component!=nullptr)
+	if (CountSelectedMediaItems(nullptr) == 0)
 	{
-		g_rubberband_component->processSelectedItem();
+		AlertWindow::showNativeDialogBox("RubberBand extension", "No media item selected", false);
+		return;
 	}
-	else
-		// More accurately, the window has not yet been open. Should probably separate the GUI and the processing in the code...
-		AlertWindow::showNativeDialogBox("RubberBand extension", "No previous settings to use", false);
+	RubberBandParams params = RubberBandGUI::getLastUsedParameters();
+	params.m_outfn = getTempFileNameAtProjectDirectory(".wav");
+	params.m_rb_exe = getRubberBandExeLocation();
+	auto completionHandler = [params](String err)
+	{
+		MessageManager::callAsync([err, params]()
+		{
+			if (err.isEmpty() == false)
+				AlertWindow::showNativeDialogBox("RubberBand extension", err, false);
+			else
+			{
+				InsertMedia(params.m_outfn.toRawUTF8(), 3);
+				UpdateArrange();
+			}
+		});
+	};
+	processItemWithRubberBandAsync(GetSelectedMediaItem(nullptr, 0), params, completionHandler);
 }
 
 bool hookCommandProc(int command, int flag) {
