@@ -163,14 +163,29 @@ void toggleXYWindow(action_entry& ae)
 	g_xy_wnd->setVisible(!g_xy_wnd->isVisible());
 }
 
+// Nasty, this way there can only be one GUI open...
+RubberBandGUI* g_rubberband_component = nullptr;
+
 void toggleRubberBandWindow(action_entry& ae)
 {
 	if (g_rubberband_wnd == nullptr)
 	{
-		g_rubberband_wnd = makeWindow("RubberBand", new RubberBandGUI, 400, 120, true, Colours::lightgrey);
+		g_rubberband_component = new RubberBandGUI;
+		g_rubberband_wnd = makeWindow("RubberBand", g_rubberband_component, 400, 120, true, Colours::lightgrey);
 		g_rubberband_wnd->m_assoc_action = &ae;
 	}
 	g_rubberband_wnd->setVisible(!g_rubberband_wnd->isVisible());
+}
+
+void processRubberBandUsingLastSettings(action_entry&)
+{
+	if (g_rubberband_wnd != nullptr && g_rubberband_component!=nullptr)
+	{
+		g_rubberband_component->processSelectedItem();
+	}
+	else
+		// More accurately, the window has not yet been open. Should probably separate the GUI and the processing in the code...
+		AlertWindow::showNativeDialogBox("RubberBand extension", "No previous settings to use", false);
 }
 
 bool hookCommandProc(int command, int flag) {
@@ -207,6 +222,11 @@ extern "C"
 				toggleRubberBandWindow(ae);
 			});
 			
+			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST", CannotToggle, [](action_entry& ae)
+			{
+				processRubberBandUsingLastSettings(ae);
+			});
+
 			rec->Register("hookcommand", (void*)hookCommandProc);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
 			return 1; // our plugin registered, return success
