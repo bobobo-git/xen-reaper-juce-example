@@ -31,7 +31,7 @@ public:
 	std::string m_desc;
 	std::string m_id_string;
 	toggle_state m_togglestate = CannotToggle;
-
+	bool m_uses_gui = false;
 	void* m_data = nullptr;
 	template<typename T>
 	T* getDataAs() { return static_cast<T*>(m_data); }
@@ -52,9 +52,11 @@ action_entry::action_entry(std::string description, std::string idstring, toggle
 
 std::vector<std::shared_ptr<action_entry>> g_actions;
 
-std::shared_ptr<action_entry> add_action(std::string name, std::string id, toggle_state togst, std::function<void(action_entry&)> f)
+std::shared_ptr<action_entry> add_action(std::string name, std::string id, toggle_state togst, 
+	std::function<void(action_entry&)> f, bool uses_gui=true)
 {
 	auto entry = std::make_shared<action_entry>(name, id, togst, f);
+	entry->m_uses_gui = uses_gui;
 	g_actions.push_back(entry);
 	return entry;
 }
@@ -191,7 +193,8 @@ void processRubberBandUsingLastSettings(action_entry&)
 bool hookCommandProc(int command, int flag) {
 	for (auto& e : g_actions) {
 		if (e->m_command_id != 0 && e->m_command_id == command) {
-			Window::initGUIifNeeded();
+			if (e->m_uses_gui == true)
+				Window::initGUIifNeeded();
 			e->m_func(*e);
 			return true;
 		}
