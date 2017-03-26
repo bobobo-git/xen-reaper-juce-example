@@ -47,15 +47,16 @@ String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans,
 		int64_t counter = 0;
 		while (counter < lenframes)
 		{
-			GetAudioAccessorSamples(acc, outsr, outchans, (double)counter / outsr, bufsize, accbuf.data());
+			int framestoread = std::min<int64_t>(bufsize, lenframes - counter);
+			GetAudioAccessorSamples(acc, outsr, outchans, (double)counter / outsr, framestoread, accbuf.data());
 			for (int i = 0; i < outchans; ++i)
 			{
-				for (int j = 0; j < bufsize; ++j)
+				for (int j = 0; j < framestoread; ++j)
 				{
 					sinkbufptrs[i][j] = accbuf[j*outchans + i];
 				}
 			}
-			sink->WriteDoubles(sinkbufptrs.data(), bufsize, outchans, 0, 1);
+			sink->WriteDoubles(sinkbufptrs.data(), framestoread, outchans, 0, 1);
 			counter += bufsize;
 		}
 	}
