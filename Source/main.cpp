@@ -34,7 +34,6 @@ public:
 	int m_valhw = 0;
 	int m_relmode = 0;
 	toggle_state m_togglestate = CannotToggle;
-	bool m_uses_gui = false;
 	void* m_data = nullptr;
 	template<typename T>
 	T* getDataAs() { return static_cast<T*>(m_data); }
@@ -56,10 +55,9 @@ action_entry::action_entry(std::string description, std::string idstring, toggle
 std::vector<std::shared_ptr<action_entry>> g_actions;
 
 std::shared_ptr<action_entry> add_action(std::string name, std::string id, toggle_state togst, 
-	std::function<void(action_entry&)> f, bool uses_gui=true)
+	std::function<void(action_entry&)> f)
 {
 	auto entry = std::make_shared<action_entry>(name, id, togst, f);
-	entry->m_uses_gui = uses_gui;
 	g_actions.push_back(entry);
 	return entry;
 }
@@ -216,8 +214,7 @@ bool on_value_action(KbdSectionInfo *sec, int command, int val, int valhw, int r
 	for (auto& e : g_actions)
 	{
 		if (e->m_command_id != 0 && e->m_command_id == command) {
-			if (e->m_uses_gui == true)
-				Window::initGUIifNeeded();
+			Window::initGUIifNeeded();
 			e->m_val = val;
 			e->m_valhw = valhw;
 			e->m_relmode = relmode;
@@ -253,9 +250,9 @@ extern "C"
 			});
 			
 			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST",
-				CannotToggle, processRubberBandUsingLastSettings, false);
+				CannotToggle, processRubberBandUsingLastSettings);
 			
-			add_action("JUCE test : MIDI/OSC action test", "JUCETEST_MIDIOSCTEST", CannotToggle, onActionWithValue, false);
+			add_action("JUCE test : MIDI/OSC action test", "JUCETEST_MIDIOSCTEST", CannotToggle, onActionWithValue);
 
 			rec->Register("hookcommand2", (void*)on_value_action);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
