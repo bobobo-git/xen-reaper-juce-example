@@ -169,9 +169,11 @@ public:
 		m_time_ratio_slider.setSkewFactorFromMidPoint(1.0);
 		m_time_ratio_slider.setValue(2.0);
 		m_time_ratio_slider.addListener(this);
+		m_time_ratio_slider.setTooltip("Time ratio");
 		m_pitch_slider.setRange(-24.0, 24.0, 0.1);
 		m_pitch_slider.setValue(-4.0);
 		m_pitch_slider.addListener(this);
+		m_pitch_slider.setTooltip("Pitch (semitones)");
 		
         m_crispness_combo.addItem("Mushy", 1);
         m_crispness_combo.addItem("Piano", 2);
@@ -183,6 +185,8 @@ public:
         
         m_crispness_combo.setSelectedId(4);
 		m_crispness_combo.addListener(this);
+		m_crispness_combo.setTooltip("Algorithm mode");
+
 		m_apply_button.addListener(this);
 		m_apply_button.setButtonText("Apply");
 		addChildComponent(&m_elapsed_label);
