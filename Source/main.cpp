@@ -30,6 +30,9 @@ public:
 	std::function<void(action_entry&)> m_func;
 	std::string m_desc;
 	std::string m_id_string;
+	int m_val = 0;
+	int m_valhw = 0;
+	int m_relmode = 0;
 	toggle_state m_togglestate = CannotToggle;
 	bool m_uses_gui = false;
 	void* m_data = nullptr;
@@ -201,17 +204,30 @@ void processRubberBandUsingLastSettings(action_entry&)
 	processItemWithRubberBandAsync(GetSelectedMediaItem(nullptr, 0), params, completionHandler);
 }
 
-bool hookCommandProc(int command, int flag) {
-	for (auto& e : g_actions) {
+void onActionWithValue(action_entry& ae)
+{
+	char buf[128];
+	sprintf_s(buf, 128, "%d %d %d\n", ae.m_val, ae.m_valhw, ae.m_relmode);
+	ShowConsoleMsg(buf);
+}
+
+bool on_value_action(KbdSectionInfo *sec, int command, int val, int valhw, int relmode, HWND hwnd)
+{
+	for (auto& e : g_actions)
+	{
 		if (e->m_command_id != 0 && e->m_command_id == command) {
 			if (e->m_uses_gui == true)
 				Window::initGUIifNeeded();
+			e->m_val = val;
+			e->m_valhw = valhw;
+			e->m_relmode = relmode;
 			e->m_func(*e);
 			return true;
 		}
 	}
 	return false; // failed to run relevant action
 }
+
 
 extern "C"
 {
@@ -237,9 +253,11 @@ extern "C"
 			});
 			
 			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST",
-				CannotToggle, processRubberBandUsingLastSettings);
+				CannotToggle, processRubberBandUsingLastSettings, false);
 			
-			rec->Register("hookcommand", (void*)hookCommandProc);
+			add_action("JUCE test : MIDI/OSC action test", "JUCETEST_MIDIOSCTEST", CannotToggle, onActionWithValue, false);
+
+			rec->Register("hookcommand2", (void*)on_value_action);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
 			return 1; // our plugin registered, return success
 		}
