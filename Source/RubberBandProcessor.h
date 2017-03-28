@@ -27,7 +27,18 @@ String getRubberBandExeLocation()
 	return String();
 }
 
-String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans, double outsr)
+inline std::unique_ptr<PCM_sink> createPCMSink(const String& outfilename, const String& format, char bitdepth, int chans, int samplerate)
+{
+	if (format == "WAV")
+	{
+		char cfg[] = { 'e','v','a','w', bitdepth, 0 };
+		return std::unique_ptr<PCM_sink>(PCM_Sink_Create(outfilename.toRawUTF8(),
+			cfg, sizeof(cfg), chans, samplerate, true));
+	}
+	return nullptr;
+}
+
+inline String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans, double outsr)
 {
 	double t0 = GetAudioAccessorStartTime(acc);
 	double t1 = GetAudioAccessorEndTime(acc);
@@ -39,9 +50,7 @@ String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans,
 	std::vector<double*> sinkbufptrs(outchans);
 	for (int i = 0; i < outchans; ++i)
 		sinkbufptrs[i] = &sinkbuf[i*bufsize];
-	char cfg[] = { 'e','v','a','w', 32, 0 };
-	auto sink = std::unique_ptr<PCM_sink>(PCM_Sink_Create(outfilename.toRawUTF8(),
-		cfg, sizeof(cfg), outchans, outsr, true));
+	auto sink = createPCMSink(outfilename, "WAV", 32, outchans, outsr);
 	if (sink != nullptr)
 	{
 		int64_t counter = 0;
@@ -64,7 +73,7 @@ String renderAudioAccessor(AudioAccessor* acc, String outfilename, int outchans,
 	return String();
 }
 
-void deleteFileIfExists(String fn)
+inline void deleteFileIfExists(String fn)
 {
 	if (fn.isEmpty() == true)
 		return;
@@ -73,7 +82,7 @@ void deleteFileIfExists(String fn)
 		temp.deleteFile();
 }
 
-String getTempFileNameAtProjectDirectory(String extension)
+inline String getTempFileNameAtProjectDirectory(String extension)
 {
 	char buf[4096];
 	GetProjectPath(buf, 4096);
