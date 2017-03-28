@@ -204,9 +204,9 @@ void processRubberBandUsingLastSettings(action_entry&)
 
 void onActionWithValue(action_entry& ae)
 {
-	char buf[128];
-	sprintf_s(buf, 128, "%d %d %d\n", ae.m_val, ae.m_valhw, ae.m_relmode);
-	ShowConsoleMsg(buf);
+	//char buf[128];
+	//sprintf_s(buf, 128, "%d %d %d\n", ae.m_val, ae.m_valhw, ae.m_relmode);
+	//ShowConsoleMsg(buf);
 }
 
 bool on_value_action(KbdSectionInfo *sec, int command, int val, int valhw, int relmode, HWND hwnd)
