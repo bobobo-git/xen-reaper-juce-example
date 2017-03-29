@@ -79,17 +79,17 @@ int toggleActionCallback(int command_id)
 	return -1;
 }
 
-bool g_juce_inited = false;
+bool g_juce_messagemanager_inited = false;
 
 class Window : public ResizableWindow
 {
 public:
-	static void initGUIifNeeded()
+	static void initMessageManager()
 	{
-		if (g_juce_inited == false)
+		if (g_juce_messagemanager_inited == false)
 		{
 			initialiseJuce_GUI();
-			g_juce_inited = true;
+			g_juce_messagemanager_inited = true;
 		}
 	}
 	Window(String title, Component* content, int w, int h, bool resizable, Colour bgcolor)
@@ -141,7 +141,7 @@ std::unique_ptr<Window> g_rubberband_wnd;
 
 std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int h, bool resizable, Colour backGroundColor)
 {
-	Window::initGUIifNeeded();
+	Window::initMessageManager();
 	auto win = std::make_unique<Window>(name, component, w, h, resizable, backGroundColor);
 	// This call order is important, the window should not be set visible
 	// before adding it into the Reaper window hierarchy
@@ -214,7 +214,7 @@ bool on_value_action(KbdSectionInfo *sec, int command, int val, int valhw, int r
 	for (auto& e : g_actions)
 	{
 		if (e->m_command_id != 0 && e->m_command_id == command) {
-			Window::initGUIifNeeded();
+			Window::initMessageManager();
 			e->m_val = val;
 			e->m_valhw = valhw;
 			e->m_relmode = relmode;
@@ -260,12 +260,12 @@ extern "C"
 		}
 		else
 		{
-			if (g_juce_inited == true)
+			if (g_juce_messagemanager_inited == true)
 			{
 				g_xy_wnd = nullptr;
 				g_rubberband_wnd = nullptr;
 				shutdownJuce_GUI();
-				g_juce_inited = false;
+				g_juce_messagemanager_inited = false;
 			}
 			return 0;
 		}
