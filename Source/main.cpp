@@ -150,16 +150,11 @@ std::unique_ptr<Window> g_rubberband_wnd;
 
 #ifdef WIN32
 WNDPROC g_old_mainwnd_proc = NULL;
-LRESULT CALLBACK closeCatcher(
-	_In_ HWND   hwnd,
-	_In_ UINT   uMsg,
-	_In_ WPARAM wParam,
-	_In_ LPARAM lParam
-)
+LRESULT CALLBACK closeCatcher(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-	if (uMsg == WM_CLOSE)
+	if (uMsg == WM_DESTROY)
 	{
-		//Logger::writeToLog("Catched Reaper main window WM_CLOSE");
+		//Logger::writeToLog("Catched Reaper main window WM_DESTROY");
 		for (auto& e : g_juce_windows)
 			e->removeFromDesktop();
 	}
