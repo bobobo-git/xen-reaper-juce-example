@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <set>
 #include "JuceHeader.h"
 #include "xy_component.h"
 #include "RubberBandProcessor.h"
@@ -81,6 +82,10 @@ int toggleActionCallback(int command_id)
 
 bool g_juce_messagemanager_inited = false;
 
+class Window;
+
+std::set<Window*> g_juce_windows;
+
 class Window : public ResizableWindow
 {
 public:
@@ -95,13 +100,17 @@ public:
 	Window(String title, Component* content, int w, int h, bool resizable, Colour bgcolor)
 		: ResizableWindow(title,bgcolor,false), m_content_component(content)
 	{
+		g_juce_windows.insert(this);
 		setContentOwned(m_content_component, true);
 		setTopLeftPosition(10, 60);
 		setSize(w, h);
 		setResizable(resizable, false);
 		setOpaque(true);
 	}
-	~Window() {}
+	~Window() 
+	{
+		g_juce_windows.erase(this);
+	}
 	int getDesktopWindowStyleFlags() const override
 	{
 		if (isResizable() == true)
@@ -139,6 +148,25 @@ private:
 std::unique_ptr<Window> g_xy_wnd;
 std::unique_ptr<Window> g_rubberband_wnd;
 
+#ifdef WIN32
+WNDPROC g_old_mainwnd_proc = NULL;
+LRESULT CALLBACK closeCatcher(
+	_In_ HWND   hwnd,
+	_In_ UINT   uMsg,
+	_In_ WPARAM wParam,
+	_In_ LPARAM lParam
+)
+{
+	if (uMsg == WM_CLOSE)
+	{
+		//Logger::writeToLog("Catched Reaper main window WM_CLOSE");
+		for (auto& e : g_juce_windows)
+			e->removeFromDesktop();
+	}
+	return g_old_mainwnd_proc(hwnd, uMsg, wParam, lParam);
+}
+#endif
+
 std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int h, bool resizable, Colour backGroundColor)
 {
 	Window::initMessageManager();
@@ -146,9 +174,11 @@ std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int
 	// This call order is important, the window should not be set visible
 	// before adding it into the Reaper window hierarchy
 	// Currently this only works for Windows, OS-X needs some really annoying special handling
-	// not implemented yet
+	// not implemented yet, so just make the window be always on top
 #ifdef WIN32
 	win->addToDesktop(win->getDesktopWindowStyleFlags(), GetMainHwnd());
+	if (g_old_mainwnd_proc == NULL)
+		g_old_mainwnd_proc = (WNDPROC)SetWindowLongPtr(GetMainHwnd(), GWLP_WNDPROC, (LONG_PTR)closeCatcher);
 #else
 	win->addToDesktop(win->getDesktopWindowStyleFlags(), 0);
 	win->setAlwaysOnTop(true);
@@ -204,9 +234,9 @@ void processRubberBandUsingLastSettings(action_entry&)
 
 void onActionWithValue(action_entry& ae)
 {
-	//char buf[128];
-	//sprintf_s(buf, 128, "%d %d %d\n", ae.m_val, ae.m_valhw, ae.m_relmode);
-	//ShowConsoleMsg(buf);
+	char buf[256];
+	sprintf(buf, "%d %d %d\n", ae.m_val, ae.m_valhw, ae.m_relmode);
+	ShowConsoleMsg(buf);
 }
 
 bool on_value_action(KbdSectionInfo *sec, int command, int val, int valhw, int relmode, HWND hwnd)
