@@ -5,7 +5,6 @@
 #include <vector>
 #include <functional>
 #include <string>
-#include <set>
 #include "JuceHeader.h"
 #include "xy_component.h"
 #include "RubberBandProcessor.h"
@@ -82,10 +81,6 @@ int toggleActionCallback(int command_id)
 
 bool g_juce_messagemanager_inited = false;
 
-class Window;
-
-std::set<Window*> g_juce_windows;
-
 class Window : public ResizableWindow
 {
 public:
@@ -100,7 +95,6 @@ public:
 	Window(String title, Component* content, int w, int h, bool resizable, Colour bgcolor)
 		: ResizableWindow(title,bgcolor,false), m_content_component(content)
 	{
-		g_juce_windows.insert(this);
 		setContentOwned(m_content_component, true);
 		setTopLeftPosition(10, 60);
 		setSize(w, h);
@@ -109,7 +103,6 @@ public:
 	}
 	~Window() 
 	{
-		g_juce_windows.erase(this);
 	}
 	int getDesktopWindowStyleFlags() const override
 	{
@@ -148,20 +141,6 @@ private:
 std::unique_ptr<Window> g_xy_wnd;
 std::unique_ptr<Window> g_rubberband_wnd;
 
-#ifdef WIN32
-WNDPROC g_old_mainwnd_proc = NULL;
-LRESULT CALLBACK closeCatcher(HWND hwnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
-{
-	if (uMsg == WM_DESTROY)
-	{
-		//Logger::writeToLog("Catched Reaper main window WM_DESTROY");
-		for (auto& e : g_juce_windows)
-			e->removeFromDesktop();
-	}
-	return g_old_mainwnd_proc(hwnd, uMsg, wParam, lParam);
-}
-#endif
-
 std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int h, bool resizable, Colour backGroundColor)
 {
 	Window::initMessageManager();
@@ -172,8 +151,6 @@ std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int
 	// not implemented yet, so just make the window be always on top
 #ifdef WIN32
 	win->addToDesktop(win->getDesktopWindowStyleFlags(), GetMainHwnd());
-	if (g_old_mainwnd_proc == NULL)
-		g_old_mainwnd_proc = (WNDPROC)SetWindowLongPtr(GetMainHwnd(), GWLP_WNDPROC, (LONG_PTR)closeCatcher);
 #else
 	win->addToDesktop(win->getDesktopWindowStyleFlags(), 0);
 	win->setAlwaysOnTop(true);
