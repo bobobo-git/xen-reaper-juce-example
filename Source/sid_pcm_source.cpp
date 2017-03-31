@@ -79,10 +79,12 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 {
 	juce::AlertWindow aw("SID source properties","",AlertWindow::InfoIcon);
 	StringArray items;
-	for (int i = 1; i < 11; ++i)
+	for (int i = 1; i < 21; ++i)
 		items.add(String(i));
 	aw.addComboBox("tracknum", items, "Track number");
-	aw.getComboBoxComponent("tracknum")->setSelectedId(m_sid_track);
+	if (m_sid_track>0)
+		aw.getComboBoxComponent("tracknum")->setSelectedId(m_sid_track);
+	else aw.getComboBoxComponent("tracknum")->setSelectedId(1);
 	aw.addTextEditor("tracklen", String(m_sidlen, 1), "Length to use");
 	aw.addButton("OK", 1);
 	int r = aw.runModalLoop();
@@ -231,6 +233,6 @@ void SID_PCM_Source::renderSID()
 	else
 	{
 		String temp = m_childprocess.readAllProcessOutput();
-		ShowConsoleMsg(temp.toRawUTF8());
+		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "SID import error", temp);
 	}
 }
