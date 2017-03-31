@@ -8,6 +8,7 @@
 #include "JuceHeader.h"
 #include "xy_component.h"
 #include "RubberBandProcessor.h"
+#include "sid_pcm_source.h"
 
 HINSTANCE g_hInst;
 HWND g_parent;
@@ -227,6 +228,40 @@ bool on_value_action(KbdSectionInfo *sec, int command, int val, int valhw, int r
 	return false; // failed to run relevant action
 }
 
+PCM_source *CreateFromType(const char *type, int priority)
+{
+	if (priority>4 && !strcmp(type, "SIDSOURCE"))
+		return new SID_PCM_Source;
+	return nullptr;
+}
+
+PCM_source *CreateFromFile(const char *filename, int priority)
+{
+	if (priority > 4)
+	{
+		ShowConsoleMsg("create from file ");
+		ShowConsoleMsg(filename);
+		ShowConsoleMsg("\n");
+		Window::initMessageManager();
+		SID_PCM_Source* src = new SID_PCM_Source;
+		src->SetFileName(filename);
+		return src;
+	}
+	return nullptr;
+}
+
+const char *EnumFileExtensions(int i, const char **descptr) // call increasing i until returns a string, if descptr's output is NULL, use last description
+{
+	if (i == 0)
+	{
+		if (descptr) *descptr = "SID music files";
+		return "SID";
+	}
+	if (descptr) *descptr = nullptr;
+	return nullptr;
+}
+
+pcmsrc_register_t myRegStruct = { CreateFromType,CreateFromFile,EnumFileExtensions };
 
 extern "C"
 {
@@ -258,6 +293,7 @@ extern "C"
 
 			rec->Register("hookcommand2", (void*)on_value_action);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
+			rec->Register("pcmsrc", &myRegStruct);
 			return 1; // our plugin registered, return success
 		}
 		else
