@@ -77,6 +77,22 @@ double SID_PCM_Source::GetLength()
 
 int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 {
+	juce::AlertWindow aw("SID source properties","",AlertWindow::InfoIcon);
+	StringArray items;
+	for (int i = 1; i < 11; ++i)
+		items.add(String(i));
+	aw.addComboBox("tracknum", items, "Track number");
+	aw.getComboBoxComponent("tracknum")->setSelectedId(m_sid_track);
+	aw.addTextEditor("tracklen", String(m_sidlen, 1), "Length to use");
+	aw.addButton("OK", 1);
+	int r = aw.runModalLoop();
+	if (r == 1)
+	{
+		m_sid_track = aw.getComboBoxComponent("tracknum")->getSelectedId();
+		double len = aw.getTextEditorContents("tracklen").getDoubleValue();
+		m_sidlen = jlimit(1.0, 1200.0, len);
+		renderSID();
+	}
 	return 0;
 }
 
@@ -199,6 +215,7 @@ void SID_PCM_Source::renderSID()
 	//ShowConsoleMsg("\n");
 	args.add(outfn);
 	m_childprocess.start(args);
+	// Slightly evil, this will block the GUI thread, but the SID convert is relatively fast...
 	m_childprocess.waitForProcessToFinish(60000);
 	if (m_childprocess.getExitCode() == 0)
 	{
