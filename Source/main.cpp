@@ -230,19 +230,21 @@ bool on_value_action(KbdSectionInfo *sec, int command, int val, int valhw, int r
 
 PCM_source *CreateFromType(const char *type, int priority)
 {
-	if (priority>4 && !strcmp(type, "SIDSOURCE"))
+	Window::initMessageManager(); // SetFileName starts timer
+	if (priority>4 && strcmp(type, "SIDSOURCE")==0)
 		return new SID_PCM_Source;
 	return nullptr;
 }
 
 PCM_source *CreateFromFile(const char *filename, int priority)
 {
-	if (priority > 4)
+	String temp = String(CharPointer_UTF8(filename));
+	if (priority > 4 && temp.endsWithIgnoreCase("sid"))
 	{
-		ShowConsoleMsg("create from file ");
-		ShowConsoleMsg(filename);
-		ShowConsoleMsg("\n");
-		Window::initMessageManager();
+		//ShowConsoleMsg("create from file ");
+		//ShowConsoleMsg(filename);
+		//ShowConsoleMsg("\n");
+		Window::initMessageManager(); // SetFileName starts timer
 		SID_PCM_Source* src = new SID_PCM_Source;
 		src->SetFileName(filename);
 		return src;
