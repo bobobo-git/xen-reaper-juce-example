@@ -241,9 +241,6 @@ PCM_source *CreateFromFile(const char *filename, int priority)
 	String temp = String(CharPointer_UTF8(filename));
 	if (priority > 4 && temp.endsWithIgnoreCase("sid"))
 	{
-		//ShowConsoleMsg("create from file ");
-		//ShowConsoleMsg(filename);
-		//ShowConsoleMsg("\n");
 		Window::initMessageManager(); // SetFileName starts timer
 		SID_PCM_Source* src = new SID_PCM_Source;
 		src->SetFileName(filename);

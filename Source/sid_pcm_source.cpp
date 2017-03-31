@@ -3,12 +3,12 @@
 
 SID_PCM_Source::SID_PCM_Source()
 {
-	//ShowConsoleMsg("SID ctor\n");
+	
 }
 
 SID_PCM_Source::~SID_PCM_Source()
 {
-	//ShowConsoleMsg("SID dtor\n");
+	
 }
 
 void SID_PCM_Source::timerCallback()
@@ -20,7 +20,6 @@ void SID_PCM_Source::timerCallback()
 
 PCM_source * SID_PCM_Source::Duplicate()
 {
-	//ShowConsoleMsg("SID duplicate\n");
 	SID_PCM_Source* dupl = new SID_PCM_Source;
 	dupl->m_sidfn = m_sidfn;
 	dupl->m_sidlen = m_sidlen;
@@ -122,7 +121,6 @@ int SID_PCM_Source::LoadState(const char * firstline, ProjectStateContext * ctx)
 	LineParser lp;
 	char buf[2048];
 	for (;;)
-	//while (ctx->GetLine(buf, 2048) != -1)
 	{
 		if (ctx->GetLine(buf, sizeof(buf))) 
 			break;
@@ -199,12 +197,9 @@ void SID_PCM_Source::renderSID()
 		{
 			m_playsource = std::unique_ptr<PCM_source>(src);
 			Main_OnCommand(40047, 0); // build any missing peaks
-			//ShowConsoleMsg("Using cached SID render\n");
 			return;
 		}
 	}
-	//ShowConsoleMsg("Rendering sid...\n");
-	//ShowConsoleMsg(m_sidfn.toRawUTF8());
 	StringArray args;
 	args.add("C:\\Portable_Apps\\SID_to_WAV_v1.8\\SID2WAV.EXE");
 	args.add("-t" + String(outlen));
@@ -212,16 +207,12 @@ void SID_PCM_Source::renderSID()
 	if (m_sid_track > 0)
 		args.add("-o" + String(m_sid_track));
 	args.add(m_sidfn);
-	//ShowConsoleMsg("export outfile name ");
-	//ShowConsoleMsg(outfn.toRawUTF8());
-	//ShowConsoleMsg("\n");
 	args.add(outfn);
 	m_childprocess.start(args);
 	// Slightly evil, this will block the GUI thread, but the SID convert is relatively fast...
 	m_childprocess.waitForProcessToFinish(60000);
 	if (m_childprocess.getExitCode() == 0)
 	{
-		//ShowConsoleMsg("rendered ok!\n");
 		PCM_source* src = PCM_Source_CreateFromFile(outfn.toRawUTF8());
 		if (src != nullptr)
 		{
