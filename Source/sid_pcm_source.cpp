@@ -24,6 +24,7 @@ PCM_source * SID_PCM_Source::Duplicate()
 	dupl->m_sidfn = m_sidfn;
 	dupl->m_sidlen = m_sidlen;
 	dupl->m_sid_track = m_sid_track;
+	dupl->m_sid_channelmode = m_sid_channelmode;
 	dupl->renderSID();
 	return dupl;
 }
@@ -84,6 +85,12 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 	if (m_sid_track>0)
 		aw.getComboBoxComponent("tracknum")->setSelectedId(m_sid_track);
 	else aw.getComboBoxComponent("tracknum")->setSelectedId(1);
+	items.clear();
+	items.add("All channels");
+	for (int i = 1; i < 5; ++i)
+		items.add("Solo "+String(i));
+	aw.addComboBox("channelmode", items, "Channel mode");
+	aw.getComboBoxComponent("channelmode")->setSelectedId(m_sid_channelmode + 1);
 	aw.addTextEditor("tracklen", String(m_sidlen, 1), "Length to use");
 	aw.addButton("OK", 1);
 	int r = aw.runModalLoop();
@@ -92,6 +99,7 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 		m_sid_track = aw.getComboBoxComponent("tracknum")->getSelectedId();
 		double len = aw.getTextEditorContents("tracklen").getDoubleValue();
 		m_sidlen = jlimit(1.0, 1200.0, len);
+		m_sid_channelmode = aw.getComboBoxComponent("channelmode")->getSelectedId() - 1;
 		renderSID();
 	}
 	return 0;
@@ -113,7 +121,7 @@ void SID_PCM_Source::GetPeakInfo(PCM_source_peaktransfer_t * block)
 
 void SID_PCM_Source::SaveState(ProjectStateContext * ctx)
 {
-	ctx->AddLine("FILE \"%s\" %f %d", m_sidfn.toRawUTF8(),m_sidlen,m_sid_track);
+	ctx->AddLine("FILE \"%s\" %f %d %d", m_sidfn.toRawUTF8(),m_sidlen,m_sid_track, m_sid_channelmode);
 }
 
 int SID_PCM_Source::LoadState(const char * firstline, ProjectStateContext * ctx)
@@ -130,6 +138,7 @@ int SID_PCM_Source::LoadState(const char * firstline, ProjectStateContext * ctx)
 			m_sidfn = String(CharPointer_UTF8(lp.gettoken_str(1)));
 			m_sidlen = lp.gettoken_float(2);
 			m_sid_track = lp.gettoken_int(3);
+			m_sid_channelmode = lp.gettoken_int(4);
 		}
 		if (lp.gettoken_str(0)[0] == '>')
 		{
@@ -176,8 +185,7 @@ void SID_PCM_Source::renderSID()
 	mb.append(m_sidfn.toRawUTF8(), m_sidfn.getNumBytesAsUTF8());
 	double outlen = m_sidlen;
 	mb.append(&outlen, sizeof(double));
-	int numoutchans = 1;
-	mb.append(&numoutchans, sizeof(int));
+	mb.append(&m_sid_channelmode, sizeof(int));
 	mb.append(&m_sid_track, sizeof(int));
 	juce::MD5 hash(mb);
 	char buf[2048];
@@ -206,6 +214,14 @@ void SID_PCM_Source::renderSID()
 	args.add("-16");
 	if (m_sid_track > 0)
 		args.add("-o" + String(m_sid_track));
+	if (m_sid_channelmode > 0)
+	{
+		String chanarg("-m");
+		for (int i = 1; i < 5; ++i)
+			if (i != m_sid_channelmode)
+				chanarg.append(String(i),1);
+		args.add(chanarg);
+	}
 	args.add(m_sidfn);
 	args.add(outfn);
 	m_childprocess.start(args);

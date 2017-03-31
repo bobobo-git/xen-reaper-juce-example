@@ -59,4 +59,5 @@ private:
 	String m_displaysidname;
 	double m_sidlen = 90.0;
 	int m_sid_track = 0;
+	int m_sid_channelmode = 0;
 };
