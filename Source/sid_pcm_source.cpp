@@ -255,8 +255,11 @@ void SID_PCM_Source::renderSID()
 
 void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 {
-	int rendered_ok = 0;
-	for (int i = 0; i < 3; ++i)
+	double t0 = Time::getMillisecondCounterHiRes();
+	int numoutchans = 3;
+	bool do_parallel_render = false;
+	ChildProcess childprocs[4];
+	for (int i = 0; i < numoutchans; ++i)
 	{
 		StringArray args;
 		args.add("C:\\Portable_Apps\\SID_to_WAV_v1.8\\SID2WAV.EXE");
@@ -273,20 +276,56 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 		args.add(m_sidfn);
 		String chantempname = outdir + "/sidtemp" + String(i) + ".wav";
 		args.add(chantempname);
-		ChildProcess childprocess;
-		childprocess.start(args);
-		// Slightly evil, this will block the GUI thread, but the SID convert is relatively fast...
-		childprocess.waitForProcessToFinish(60000);
-		if (childprocess.getExitCode() == 0)
-			++rendered_ok;
+		if (do_parallel_render == true)
+		{
+			childprocs[i].start(args);
+		}
+		else
+		{
+			childprocs[0].start(args);
+			childprocs[0].waitForProcessToFinish(60000);
+		}
 	}
-	if (rendered_ok == 3)
+	bool rendered_ok = false;
+	if (do_parallel_render == true)
+	{
+		bool cancel = false;
+		while (true)
+		{
+			int ready_count = 0;
+			for (int i = 0; i < numoutchans; ++i)
+			{
+				if (childprocs[i].isRunning() == false)
+				{
+					if (childprocs[i].getExitCode() == 0)
+						++ready_count;
+					else
+					{
+						cancel = true;
+					}
+				}
+			}
+			if (cancel == true)
+			{
+				break;
+			}
+			if (ready_count >= numoutchans)
+			{
+				rendered_ok = true;
+				break;
+			}
+			Thread::sleep(50);
+		}
+	}
+	else
+		rendered_ok = childprocs[0].getExitCode() == 0;
+	if (rendered_ok == true)
 	{
 		char cfg[] = { 'e','v','a','w', 16, 0 };
 		auto sink = std::unique_ptr<PCM_sink>(PCM_Sink_Create(outfn.toRawUTF8(),
-			cfg, sizeof(cfg), 3, 44100.0, true));
-		std::array<std::unique_ptr<PCM_source>, 3> sources;
-		for (int i = 0; i < 3; ++i)
+			cfg, sizeof(cfg), numoutchans, 44100.0, true));
+		std::array<std::unique_ptr<PCM_source>, 4> sources;
+		for (int i = 0; i < numoutchans; ++i)
 		{
 			String chantempname = outdir + "/sidtemp" + String(i) + ".wav";
 			PCM_source* src = PCM_Source_CreateFromFile(chantempname.toRawUTF8());
@@ -294,16 +333,16 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 		}
 		int bufsize = 32768;
 		std::vector<double> srcbuf(bufsize);
-		std::vector<double> sinkbuf(bufsize*3);
-		std::vector<double*> sinkbufptrs(3);
-		for (int i = 0; i < 3; ++i)
+		std::vector<double> sinkbuf(bufsize*numoutchans);
+		std::vector<double*> sinkbufptrs(numoutchans);
+		for (int i = 0; i < numoutchans; ++i)
 			sinkbufptrs[i] = &sinkbuf[i*bufsize];
 		int outcounter = 0;
 		int outlenframes = sources[0]->GetLength()*44100.0;
 		while (outcounter < outlenframes)
 		{
 			int framestoread = std::min<int64_t>(bufsize, outlenframes - outcounter);
-			for (int i = 0; i < 3; ++i)
+			for (int i = 0; i < numoutchans; ++i)
 			{
 				PCM_source_transfer_t transfer = { 0 };
 				transfer.nch = 1;
@@ -316,7 +355,7 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 				for (int j = 0; j < bufsize; ++j)
 					sinkbufptrs[i][j] = srcbuf[j];
 			}
-			sink->WriteDoubles(sinkbufptrs.data(), framestoread, 3, 0, 1);
+			sink->WriteDoubles(sinkbufptrs.data(), framestoread, numoutchans, 0, 1);
 			outcounter += bufsize;
 		}
 		sink = nullptr;
@@ -326,14 +365,17 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 			m_playsource = std::unique_ptr<PCM_source>(src);
 			Main_OnCommand(40047, 0); // build any missing peaks
 		}
-		for (int i = 0; i < 3; ++i)
+		for (int i = 0; i < numoutchans; ++i)
 		{
 			sources[i] = nullptr;
 			String chantempname = outdir + "/sidtemp" + String(i) + ".wav";
 			File temp(chantempname);
 			temp.deleteFile();
 		}
-		//ShowConsoleMsg("Rendered SID into multichannel files\n");
+		double t1 = Time::getMillisecondCounterHiRes();
+		if (do_parallel_render == false)
+			Logger::writeToLog("with non-parallel SID render took " + String(t1 - t0) + " ms");
+		else Logger::writeToLog("with parallel SID render took " + String(t1 - t0) + " ms");
 	}
 	else
 	{
