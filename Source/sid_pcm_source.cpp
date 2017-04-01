@@ -200,6 +200,10 @@ int SID_PCM_Source::Extended(int call, void * parm1, void * parm2, void * parm3)
 		//sprintf(buf, "Play ended for SID source %p\n", (void*)this);
 		//ShowConsoleMsg(buf);
 	}
+	if (call == PCM_SOURCE_EXT_SETITEMCONTEXT)
+	{
+		m_item = (MediaItem*)parm1;
+	}
 	return 0;
 }
 
@@ -230,6 +234,8 @@ void SID_PCM_Source::renderSID()
 		if (src != nullptr)
 		{
 			m_playsource = std::unique_ptr<PCM_source>(src);
+			if (m_playsource->GetNumChannels() > 2)
+				adjustParentTrackChannelCount();
 			Main_OnCommand(40047, 0); // build any missing peaks
 			return;
 		}
@@ -281,7 +287,7 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 {
 	double t0 = Time::getMillisecondCounterHiRes();
 	int numoutchans = 3;
-	bool do_parallel_render = false;
+	bool do_parallel_render = true;
 	ChildProcess childprocs[4];
 	for (int i = 0; i < numoutchans; ++i)
 	{
@@ -388,6 +394,7 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 		if (src != nullptr)
 		{
 			m_playsource = std::unique_ptr<PCM_source>(src);
+			adjustParentTrackChannelCount();
 			Main_OnCommand(40047, 0); // build any missing peaks
 		}
 		for (int i = 0; i < numoutchans; ++i)
@@ -405,5 +412,18 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 	else
 	{
 		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "SID import error", "Could not create channel temporary files");
+	}
+}
+
+void SID_PCM_Source::adjustParentTrackChannelCount()
+{
+	if (m_item != nullptr)
+	{
+		MediaTrack* track = GetMediaItemTrack(m_item);
+		if (track != nullptr)
+		{
+			int num = 4;
+			GetSetMediaTrackInfo(track, "I_NCHAN", &num);
+		}
 	}
 }
