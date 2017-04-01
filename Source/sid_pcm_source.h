@@ -57,7 +57,7 @@ private:
 	std::unique_ptr<PCM_source> m_playsource;
 	String m_sidfn;
 	String m_displaysidname;
-	double m_sidlen = 180.0;
+	double m_sidlen = 60.0;
 	int m_sid_track = 0;
 	int m_sid_channelmode = 0;
 };

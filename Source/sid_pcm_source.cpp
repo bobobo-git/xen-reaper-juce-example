@@ -80,29 +80,41 @@ double SID_PCM_Source::GetLength()
 
 int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 {
-	juce::AlertWindow aw("SID source properties","",AlertWindow::InfoIcon);
+	juce::AlertWindow aw("SID source properties",m_sidfn,AlertWindow::InfoIcon);
 	StringArray items;
+	items.add("Default track");
 	for (int i = 1; i < 21; ++i)
 		items.add(String(i));
 	aw.addComboBox("tracknum", items, "Track number");
-	if (m_sid_track>0)
-		aw.getComboBoxComponent("tracknum")->setSelectedId(m_sid_track);
-	else aw.getComboBoxComponent("tracknum")->setSelectedId(1);
+	aw.getComboBoxComponent("tracknum")->setSelectedId(m_sid_track+1);
+	
 	items.clear();
-	items.add("All channels");
+	items.add("All channels (mono)");
+	items.add("All channels (3 channels)");
 	for (int i = 1; i < 5; ++i)
 		items.add("Solo "+String(i));
 	aw.addComboBox("channelmode", items, "Channel mode");
-	aw.getComboBoxComponent("channelmode")->setSelectedId(m_sid_channelmode + 1);
+	if (m_sid_channelmode == 0)
+		aw.getComboBoxComponent("channelmode")->setSelectedId(1);
+	if (m_sid_channelmode == 10)
+		aw.getComboBoxComponent("channelmode")->setSelectedId(2);
+	if (m_sid_channelmode >= 1 && m_sid_channelmode < 5)
+		aw.getComboBoxComponent("channelmode")->setSelectedId(m_sid_channelmode + 2);
 	aw.addTextEditor("tracklen", String(m_sidlen, 1), "Length to use");
 	aw.addButton("OK", 1);
 	int r = aw.runModalLoop();
 	if (r == 1)
 	{
-		m_sid_track = aw.getComboBoxComponent("tracknum")->getSelectedId();
+		m_sid_track = aw.getComboBoxComponent("tracknum")->getSelectedId()-1;
 		double len = aw.getTextEditorContents("tracklen").getDoubleValue();
 		m_sidlen = jlimit(1.0, 1200.0, len);
-		m_sid_channelmode = aw.getComboBoxComponent("channelmode")->getSelectedId() - 1;
+		int chanmode = aw.getComboBoxComponent("channelmode")->getSelectedId();
+		if (chanmode == 1)
+			m_sid_channelmode = 0;
+		if (chanmode == 2)
+			m_sid_channelmode = 10;
+		if (chanmode >=3 && chanmode<=6)
+			m_sid_channelmode = chanmode - 2;
 		renderSID();
 	}
 	return 0;
@@ -211,7 +223,7 @@ void SID_PCM_Source::renderSID()
 			return;
 		}
 	}
-	if (m_sid_channelmode == 0)
+	if (m_sid_channelmode == 10)
 	{
 		renderSIDintoMultichannel(outfn, outfolder);
 		return;
