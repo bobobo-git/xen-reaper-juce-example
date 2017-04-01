@@ -1,5 +1,6 @@
 #include "sid_pcm_source.h"
 #include "lineparse.h"
+#include <array>
 
 SID_PCM_Source::SID_PCM_Source()
 {
@@ -60,7 +61,9 @@ const char * SID_PCM_Source::GetFileName()
 
 int SID_PCM_Source::GetNumChannels()
 {
-	return 1;
+	if (m_playsource == nullptr)
+		return 1;
+	return m_playsource->GetNumChannels();
 }
 
 double SID_PCM_Source::GetSampleRate()
@@ -208,6 +211,11 @@ void SID_PCM_Source::renderSID()
 			return;
 		}
 	}
+	if (m_sid_channelmode == 0)
+	{
+		renderSIDintoMultichannel(outfn, outfolder);
+		return;
+	}
 	StringArray args;
 	args.add("C:\\Portable_Apps\\SID_to_WAV_v1.8\\SID2WAV.EXE");
 	args.add("-t" + String(outlen));
@@ -242,5 +250,93 @@ void SID_PCM_Source::renderSID()
 	{
 		String temp = childprocess.readAllProcessOutput();
 		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "SID import error", temp);
+	}
+}
+
+void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
+{
+	int rendered_ok = 0;
+	for (int i = 0; i < 3; ++i)
+	{
+		StringArray args;
+		args.add("C:\\Portable_Apps\\SID_to_WAV_v1.8\\SID2WAV.EXE");
+		args.add("-t" + String(m_sidlen));
+		args.add("-16");
+		if (m_sid_track > 0)
+			args.add("-o" + String(m_sid_track));
+		
+		String chanarg("-m");
+		for (int j = 1; j < 5; ++j)
+			if (j != i+1)
+				chanarg.append(String(j), 1);
+		args.add(chanarg);
+		args.add(m_sidfn);
+		String chantempname = outdir + "/sidtemp" + String(i) + ".wav";
+		args.add(chantempname);
+		ChildProcess childprocess;
+		childprocess.start(args);
+		// Slightly evil, this will block the GUI thread, but the SID convert is relatively fast...
+		childprocess.waitForProcessToFinish(60000);
+		if (childprocess.getExitCode() == 0)
+			++rendered_ok;
+	}
+	if (rendered_ok == 3)
+	{
+		char cfg[] = { 'e','v','a','w', 16, 0 };
+		auto sink = std::unique_ptr<PCM_sink>(PCM_Sink_Create(outfn.toRawUTF8(),
+			cfg, sizeof(cfg), 3, 44100.0, true));
+		std::array<std::unique_ptr<PCM_source>, 3> sources;
+		for (int i = 0; i < 3; ++i)
+		{
+			String chantempname = outdir + "/sidtemp" + String(i) + ".wav";
+			PCM_source* src = PCM_Source_CreateFromFile(chantempname.toRawUTF8());
+			sources[i] = std::unique_ptr<PCM_source>(src);
+		}
+		int bufsize = 32768;
+		std::vector<double> srcbuf(bufsize);
+		std::vector<double> sinkbuf(bufsize*3);
+		std::vector<double*> sinkbufptrs(3);
+		for (int i = 0; i < 3; ++i)
+			sinkbufptrs[i] = &sinkbuf[i*bufsize];
+		int outcounter = 0;
+		int outlenframes = sources[0]->GetLength()*44100.0;
+		while (outcounter < outlenframes)
+		{
+			int framestoread = std::min<int64_t>(bufsize, outlenframes - outcounter);
+			for (int i = 0; i < 3; ++i)
+			{
+				PCM_source_transfer_t transfer = { 0 };
+				transfer.nch = 1;
+				transfer.length = bufsize;
+				transfer.samplerate = 44100.0;
+				transfer.time_s = (double)outcounter / 44100.0;
+				transfer.samples = srcbuf.data();
+				//transfer.absolute_time_s = (double)outcounter / 44100.0;
+				sources[i]->GetSamples(&transfer);
+				for (int j = 0; j < bufsize; ++j)
+					sinkbufptrs[i][j] = srcbuf[j];
+			}
+			sink->WriteDoubles(sinkbufptrs.data(), framestoread, 3, 0, 1);
+			outcounter += bufsize;
+		}
+		sink = nullptr;
+		PCM_source* src = PCM_Source_CreateFromFile(outfn.toRawUTF8());
+		if (src != nullptr)
+		{
+			m_playsource = std::unique_ptr<PCM_source>(src);
+			Main_OnCommand(40047, 0); // build any missing peaks
+		}
+		for (int i = 0; i < 3; ++i)
+		{
+			sources[i] = nullptr;
+			String chantempname = outdir + "/sidtemp" + String(i) + ".wav";
+			File temp(chantempname);
+			temp.deleteFile();
+		}
+		//ShowConsoleMsg("Rendered SID into multichannel files\n");
+	}
+	else
+	{
+		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "SID import error", "Could not create channel temporary files");
 	}
 }

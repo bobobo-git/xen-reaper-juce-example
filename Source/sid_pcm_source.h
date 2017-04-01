@@ -53,6 +53,7 @@ public:
 
 private:
 	void renderSID();
+	void renderSIDintoMultichannel(String outfn, String outdir);
 	std::unique_ptr<PCM_source> m_playsource;
 	String m_sidfn;
 	String m_displaysidname;
