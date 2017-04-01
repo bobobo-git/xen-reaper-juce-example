@@ -343,7 +343,7 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 			PCM_source* src = PCM_Source_CreateFromFile(chantempname.toRawUTF8());
 			sources[i] = std::unique_ptr<PCM_source>(src);
 		}
-		int bufsize = 32768;
+		int bufsize = 262144;
 		std::vector<double> srcbuf(bufsize);
 		std::vector<double> sinkbuf(bufsize*numoutchans);
 		std::vector<double*> sinkbufptrs(numoutchans);
