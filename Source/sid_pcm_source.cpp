@@ -192,6 +192,17 @@ void SID_PCM_Source::PeaksBuild_Finish()
 	m_playsource->PeaksBuild_Finish();
 }
 
+int SID_PCM_Source::Extended(int call, void * parm1, void * parm2, void * parm3)
+{
+	if (call == PCM_SOURCE_EXT_ENDPLAYNOTIFY)
+	{
+		//char buf[500];
+		//sprintf(buf, "Play ended for SID source %p\n", (void*)this);
+		//ShowConsoleMsg(buf);
+	}
+	return 0;
+}
+
 void SID_PCM_Source::renderSID()
 {
 	if (m_sidfn.isEmpty() == true)
@@ -229,7 +240,8 @@ void SID_PCM_Source::renderSID()
 		return;
 	}
 	StringArray args;
-	args.add("C:\\Portable_Apps\\SID_to_WAV_v1.8\\SID2WAV.EXE");
+	String exename = String(CharPointer_UTF8(GetResourcePath())) + "/UserPlugins/SID2WAV.EXE";
+	args.add(exename);
 	args.add("-t" + String(outlen));
 	args.add("-16");
 	if (m_sid_track > 0)
@@ -274,7 +286,8 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 	for (int i = 0; i < numoutchans; ++i)
 	{
 		StringArray args;
-		args.add("C:\\Portable_Apps\\SID_to_WAV_v1.8\\SID2WAV.EXE");
+		String exename = String(CharPointer_UTF8(GetResourcePath())) + "/UserPlugins/SID2WAV.EXE";
+		args.add(exename);
 		args.add("-t" + String(m_sidlen));
 		args.add("-16");
 		if (m_sid_track > 0)
