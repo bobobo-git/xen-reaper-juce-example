@@ -54,7 +54,6 @@ public:
 private:
 	void renderSID();
 	std::unique_ptr<PCM_source> m_playsource;
-	ChildProcess m_childprocess;
 	String m_sidfn;
 	String m_displaysidname;
 	double m_sidlen = 90.0;

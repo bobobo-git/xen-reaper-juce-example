@@ -224,10 +224,11 @@ void SID_PCM_Source::renderSID()
 	}
 	args.add(m_sidfn);
 	args.add(outfn);
-	m_childprocess.start(args);
+	ChildProcess childprocess;
+	childprocess.start(args);
 	// Slightly evil, this will block the GUI thread, but the SID convert is relatively fast...
-	m_childprocess.waitForProcessToFinish(60000);
-	if (m_childprocess.getExitCode() == 0)
+	childprocess.waitForProcessToFinish(60000);
+	if (childprocess.getExitCode() == 0)
 	{
 		PCM_source* src = PCM_Source_CreateFromFile(outfn.toRawUTF8());
 		if (src != nullptr)
@@ -239,7 +240,7 @@ void SID_PCM_Source::renderSID()
 	}
 	else
 	{
-		String temp = m_childprocess.readAllProcessOutput();
+		String temp = childprocess.readAllProcessOutput();
 		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "SID import error", temp);
 	}
 }
