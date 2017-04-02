@@ -26,6 +26,7 @@ PCM_source * SID_PCM_Source::Duplicate()
 	dupl->m_sidlen = m_sidlen;
 	dupl->m_sid_track = m_sid_track;
 	dupl->m_sid_channelmode = m_sid_channelmode;
+	dupl->m_sid_sr = m_sid_sr;
 	dupl->renderSID();
 	return dupl;
 }
@@ -68,7 +69,7 @@ int SID_PCM_Source::GetNumChannels()
 
 double SID_PCM_Source::GetSampleRate()
 {
-	return 44100.0;
+	return m_sid_sr;
 }
 
 double SID_PCM_Source::GetLength()
@@ -100,6 +101,7 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 		aw.getComboBoxComponent("channelmode")->setSelectedId(2);
 	if (m_sid_channelmode >= 1 && m_sid_channelmode < 5)
 		aw.getComboBoxComponent("channelmode")->setSelectedId(m_sid_channelmode + 2);
+	aw.addTextEditor("sr", String(m_sid_sr), "Samplerate");
 	aw.addTextEditor("tracklen", String(m_sidlen, 1), "Length to use");
 	aw.addButton("OK", 1);
 	int r = aw.runModalLoop();
@@ -115,6 +117,7 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 			m_sid_channelmode = 10;
 		if (chanmode >=3 && chanmode<=6)
 			m_sid_channelmode = chanmode - 2;
+		m_sid_sr = jlimit(8000, 384000, aw.getTextEditorContents("sr").getIntValue());
 		renderSID();
 	}
 	return 0;
@@ -136,7 +139,7 @@ void SID_PCM_Source::GetPeakInfo(PCM_source_peaktransfer_t * block)
 
 void SID_PCM_Source::SaveState(ProjectStateContext * ctx)
 {
-	ctx->AddLine("FILE \"%s\" %f %d %d", m_sidfn.toRawUTF8(),m_sidlen,m_sid_track, m_sid_channelmode);
+	ctx->AddLine("FILE \"%s\" %f %d %d %d", m_sidfn.toRawUTF8(),m_sidlen,m_sid_track, m_sid_channelmode,m_sid_sr);
 }
 
 int SID_PCM_Source::LoadState(const char * firstline, ProjectStateContext * ctx)
@@ -154,6 +157,7 @@ int SID_PCM_Source::LoadState(const char * firstline, ProjectStateContext * ctx)
 			m_sidlen = lp.gettoken_float(2);
 			m_sid_track = lp.gettoken_int(3);
 			m_sid_channelmode = lp.gettoken_int(4);
+			m_sid_sr = lp.gettoken_int(5);
 		}
 		if (lp.gettoken_str(0)[0] == '>')
 		{
@@ -217,6 +221,7 @@ void SID_PCM_Source::renderSID()
 	mb.append(&outlen, sizeof(double));
 	mb.append(&m_sid_channelmode, sizeof(int));
 	mb.append(&m_sid_track, sizeof(int));
+	mb.append(&m_sid_sr, sizeof(int));
 	juce::MD5 hash(mb);
 	char buf[2048];
 	GetProjectPath(buf, 2048);
@@ -250,6 +255,7 @@ void SID_PCM_Source::renderSID()
 	args.add(exename);
 	args.add("-t" + String(outlen));
 	args.add("-16");
+	args.add("-f" + String(m_sid_sr));
 	if (m_sid_track > 0)
 		args.add("-o" + String(m_sid_track));
 	if (m_sid_channelmode > 0)
@@ -296,6 +302,7 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 		args.add(exename);
 		args.add("-t" + String(m_sidlen));
 		args.add("-16");
+		args.add("-f" + String(m_sid_sr));
 		if (m_sid_track > 0)
 			args.add("-o" + String(m_sid_track));
 		
@@ -354,7 +361,7 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 	{
 		char cfg[] = { 'e','v','a','w', 16, 0 };
 		auto sink = std::unique_ptr<PCM_sink>(PCM_Sink_Create(outfn.toRawUTF8(),
-			cfg, sizeof(cfg), numoutchans, 44100.0, true));
+			cfg, sizeof(cfg), numoutchans, m_sid_sr, true));
 		std::array<std::unique_ptr<PCM_source>, 4> sources;
 		for (int i = 0; i < numoutchans; ++i)
 		{
@@ -369,7 +376,7 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 		for (int i = 0; i < numoutchans; ++i)
 			sinkbufptrs[i] = &sinkbuf[i*bufsize];
 		int outcounter = 0;
-		int outlenframes = sources[0]->GetLength()*44100.0;
+		int outlenframes = sources[0]->GetLength()*m_sid_sr;
 		while (outcounter < outlenframes)
 		{
 			int framestoread = std::min<int64_t>(bufsize, outlenframes - outcounter);
@@ -378,10 +385,9 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 				PCM_source_transfer_t transfer = { 0 };
 				transfer.nch = 1;
 				transfer.length = bufsize;
-				transfer.samplerate = 44100.0;
-				transfer.time_s = (double)outcounter / 44100.0;
+				transfer.samplerate = m_sid_sr;
+				transfer.time_s = (double)outcounter / m_sid_sr;
 				transfer.samples = srcbuf.data();
-				//transfer.absolute_time_s = (double)outcounter / 44100.0;
 				sources[i]->GetSamples(&transfer);
 				for (int j = 0; j < bufsize; ++j)
 					sinkbufptrs[i][j] = srcbuf[j];

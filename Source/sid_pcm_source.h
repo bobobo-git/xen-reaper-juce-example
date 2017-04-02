@@ -63,5 +63,6 @@ private:
 	double m_sidlen = 60.0;
 	int m_sid_track = 0;
 	int m_sid_channelmode = 0;
+	int m_sid_sr = 44100;
 	MediaItem* m_item = nullptr;
 };
