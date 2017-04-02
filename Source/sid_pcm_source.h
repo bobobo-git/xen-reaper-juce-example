@@ -5,6 +5,7 @@
 #include <vector>
 #include <functional>
 #include <string>
+#include <mutex>
 #include "JuceHeader.h"
 
 /*
@@ -71,6 +72,7 @@ private:
 	void renderSIDintoMultichannel(String outfn, String outdir);
 	void adjustParentTrackChannelCount();
 	std::unique_ptr<PCM_source> m_playsource;
+	std::mutex m_mutex;
 	String m_sidfn;
 	String m_displaysidname;
 	double m_sidlen = 60.0;

@@ -129,6 +129,7 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 
 void SID_PCM_Source::GetSamples(PCM_source_transfer_t * block)
 {
+	std::lock_guard<std::mutex> locker(m_mutex);
 	if (m_playsource == nullptr)
 		return;
 	m_playsource->GetSamples(block);
@@ -246,7 +247,9 @@ void SID_PCM_Source::renderSID()
 		PCM_source* src = PCM_Source_CreateFromFile(outfn.toRawUTF8());
 		if (src != nullptr)
 		{
+			m_mutex.lock();
 			m_playsource = std::unique_ptr<PCM_source>(src);
+			m_mutex.unlock();
 			if (m_playsource->GetNumChannels() > 2)
 				adjustParentTrackChannelCount();
 			Main_OnCommand(40047, 0); // build any missing peaks
@@ -285,7 +288,9 @@ void SID_PCM_Source::renderSID()
 		PCM_source* src = PCM_Source_CreateFromFile(outfn.toRawUTF8());
 		if (src != nullptr)
 		{
+			m_mutex.lock();
 			m_playsource = std::unique_ptr<PCM_source>(src);
+			m_mutex.unlock();
 			Main_OnCommand(40047, 0); // build any missing peaks
 		}
 		else ShowConsoleMsg("Could not create pcm_source\n");
@@ -414,7 +419,9 @@ void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 		PCM_source* src = PCM_Source_CreateFromFile(outfn.toRawUTF8());
 		if (src != nullptr)
 		{
+			m_mutex.lock();
 			m_playsource = std::unique_ptr<PCM_source>(src);
+			m_mutex.unlock();
 			adjustParentTrackChannelCount();
 			Main_OnCommand(40047, 0); // build any missing peaks
 		}
