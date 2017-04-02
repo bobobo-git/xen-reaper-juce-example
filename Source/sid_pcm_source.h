@@ -7,6 +7,18 @@
 #include <string>
 #include "JuceHeader.h"
 
+/*
+	A slightly silly class that imports and plays back Commodore64 SID tune files by first converting them into wav-files using the
+	SID2WAV command line program. Unfortunately Windows-only because SID2WAV does not exist for macOs. It is open source but
+	the code is in such ancient and apparently non standard-C++ style that it does not build with Clang.
+
+	This thing is perhaps not hugely useful as such, but shows some principles how something similar could be implemented for other audio 
+	media types where directly using a library for decoding is not desired for some reason. (The code dependencies needed to do what
+	SID2WAV does would complicate building the Reaper plugin immensely. We might also really end up just rendering into 
+	wav-files anyway because playing and especially seeking SIDs is a complicated business. By prerendering into wav-files we
+	get performant and predictable results.)
+*/
+
 class SID_PCM_Source : public PCM_source, public Timer
 {
 public:
@@ -53,6 +65,7 @@ public:
 
 	int Extended(int call, void *parm1, void *parm2, void *parm3) override;
 
+	MD5 getStateHash();
 private:
 	void renderSID();
 	void renderSIDintoMultichannel(String outfn, String outdir);

@@ -49,6 +49,10 @@ bool SID_PCM_Source::SetFileName(const char * newfn)
 	{
 		m_sidfn = String(CharPointer_UTF8(newfn));
 		m_displaysidname = m_sidfn;
+		/*
+			The rendering is done delayed with a timer so that the rendering doesn't slow down Reaper operation when
+			it creates a temporary instance of our class, for example when a file is drag and dropped into Reaper.
+		*/
 		startTimer(500);
 		return true;
 	}
@@ -211,18 +215,22 @@ int SID_PCM_Source::Extended(int call, void * parm1, void * parm2, void * parm3)
 	return 0;
 }
 
+MD5 SID_PCM_Source::getStateHash()
+{
+	MemoryBlock mb;
+	mb.append(m_sidfn.toRawUTF8(), m_sidfn.getNumBytesAsUTF8());
+	mb.append(&m_sidlen, sizeof(double));
+	mb.append(&m_sid_channelmode, sizeof(int));
+	mb.append(&m_sid_track, sizeof(int));
+	mb.append(&m_sid_sr, sizeof(int));
+	return MD5(mb);
+}
+
 void SID_PCM_Source::renderSID()
 {
 	if (m_sidfn.isEmpty() == true)
 		return;
-	MemoryBlock mb;
-	mb.append(m_sidfn.toRawUTF8(), m_sidfn.getNumBytesAsUTF8());
-	double outlen = m_sidlen;
-	mb.append(&outlen, sizeof(double));
-	mb.append(&m_sid_channelmode, sizeof(int));
-	mb.append(&m_sid_track, sizeof(int));
-	mb.append(&m_sid_sr, sizeof(int));
-	juce::MD5 hash(mb);
+	auto hash = getStateHash();
 	char buf[2048];
 	GetProjectPath(buf, 2048);
 	String outfolder = String(CharPointer_UTF8(buf)) + "/sid_cache";
@@ -253,7 +261,7 @@ void SID_PCM_Source::renderSID()
 	StringArray args;
 	String exename = String(CharPointer_UTF8(GetResourcePath())) + "/UserPlugins/SID2WAV.EXE";
 	args.add(exename);
-	args.add("-t" + String(outlen));
+	args.add("-t" + String(m_sidlen));
 	args.add("-16");
 	args.add("-f" + String(m_sid_sr));
 	if (m_sid_track > 0)
@@ -288,6 +296,13 @@ void SID_PCM_Source::renderSID()
 		AlertWindow::showMessageBox(AlertWindow::WarningIcon, "SID import error", temp);
 	}
 }
+
+/*
+OK, so this is a monstrous function...Could maybe be refactored a bit, but not much.
+What happens here is that SID2WAV is called to render each channel of the SID tune into a separate temporary WAV file.
+Optionally spawns the SID2WAV processes at the same time to process them in parallel.
+Those files are then rendered into a single multichannel file that will be used for playback.
+*/
 
 void SID_PCM_Source::renderSIDintoMultichannel(String outfn, String outdir)
 {
