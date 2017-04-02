@@ -4,6 +4,10 @@
 
 SID_PCM_Source::SID_PCM_Source()
 {
+	if (HasExtState("sid_import", "default_len"))
+		m_sidlen = jlimit(1.0, 600.0, atof(GetExtState("sid_import", "default_len")));
+	if (HasExtState("sid_import", "default_sr"))
+		m_sid_sr = jlimit(8000.0, 384000.0, atof(GetExtState("sid_import", "default_sr")));
 	
 }
 
@@ -107,9 +111,10 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 		aw.getComboBoxComponent("channelmode")->setSelectedId(m_sid_channelmode + 2);
 	aw.addTextEditor("sr", String(m_sid_sr), "Samplerate");
 	aw.addTextEditor("tracklen", String(m_sidlen, 1), "Length to use");
+	aw.addButton("OK and use as defaults", 2);
 	aw.addButton("OK", 1);
 	int r = aw.runModalLoop();
-	if (r == 1)
+	if (r == 1 || r == 2)
 	{
 		m_sid_track = aw.getComboBoxComponent("tracknum")->getSelectedId()-1;
 		double len = aw.getTextEditorContents("tracklen").getDoubleValue();
@@ -122,6 +127,14 @@ int SID_PCM_Source::PropertiesWindow(HWND hwndParent)
 		if (chanmode >=3 && chanmode<=6)
 			m_sid_channelmode = chanmode - 2;
 		m_sid_sr = jlimit(8000, 384000, aw.getTextEditorContents("sr").getIntValue());
+		if (r == 2)
+		{
+			char tempbuf[100];
+			sprintf(tempbuf, "%f", m_sidlen);
+			SetExtState("sid_import", "default_len", tempbuf, true);
+			sprintf(tempbuf, "%d", m_sid_sr);
+			SetExtState("sid_import", "default_sr", tempbuf, true);
+		}
 		renderSID();
 	}
 	return 0;
