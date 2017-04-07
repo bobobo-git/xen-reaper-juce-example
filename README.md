@@ -9,5 +9,3 @@ In Reaper it adds the following actions :
 Executable binaries of Rubberband for Windows and macOS are included in this repo. Rubberband's own site : http://breakfastquay.com/rubberband/
 
 These are not fully developed features suitable for end users. (At least at the moment.)
-
-There's also an experimental branch sid_import which adds Commodore64 SID music files import support for Reaper on Windows. That will probably be migrated over to another plugin eventually.
