@@ -38,10 +38,11 @@
     <VS2015 targetFolder="Builds/VisualStudio2015" vst3Folder="">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="1" optimisation="1" targetName="reaper_juce_extension2017"/>
+                       isDebug="1" optimisation="1" targetName="reaper_juce_extension2017"
+                       defines="JUCE_REMOVE_COMPONENT_FROM_DESKTOP_ON_WM_DESTROY&#10;"/>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
                        isDebug="0" optimisation="3" targetName="reaper_juce_extension2017"
-                       wholeProgramOptimisation="1" useRuntimeLibDLL="0"/>
+                       wholeProgramOptimisation="1" useRuntimeLibDLL="0" defines="JUCE_REMOVE_COMPONENT_FROM_DESKTOP_ON_WM_DESTROY&#10;"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
         <MODULEPATH id="juce_core" path="../../../gitrepos/JUCE/modules"/>
@@ -57,6 +58,29 @@
         <MODULEPATH id="juce_audio_processors" path="../../../gitrepos/JUCE/modules"/>
       </MODULEPATHS>
     </VS2015>
+    <VS2017 targetFolder="Builds/VisualStudio2017">
+      <CONFIGURATIONS>
+        <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
+                       isDebug="1" optimisation="1" targetName="reaper_juce_extension2017"
+                       defines="JUCE_REMOVE_COMPONENT_FROM_DESKTOP_ON_WM_DESTROY&#10;"/>
+        <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
+                       isDebug="0" optimisation="3" targetName="reaper_juce_extension2017"
+                       useRuntimeLibDLL="0" wholeProgramOptimisation="1" defines="JUCE_REMOVE_COMPONENT_FROM_DESKTOP_ON_WM_DESTROY&#10;"/>
+      </CONFIGURATIONS>
+      <MODULEPATHS>
+        <MODULEPATH id="juce_gui_extra" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_gui_basics" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_graphics" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_events" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_data_structures" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_cryptography" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_core" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_processors" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_formats" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_devices" path="../../../gitrepos/JUCE/modules"/>
+        <MODULEPATH id="juce_audio_basics" path="../../../gitrepos/JUCE/modules"/>
+      </MODULEPATHS>
+    </VS2017>
   </EXPORTFORMATS>
   <MODULES>
     <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0"/>
