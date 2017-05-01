@@ -13,6 +13,9 @@
 
 #pragma once
 
+#define JUCE_DISPLAY_SPLASH_SCREEN 0
+#define JUCE_REPORT_APP_USAGE 0
+
 //==============================================================================
 // [BEGIN_USER_CODE_SECTION]
 
