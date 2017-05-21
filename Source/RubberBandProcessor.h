@@ -89,7 +89,7 @@ inline String getTempFileNameAtProjectDirectory(String extension)
 	return String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + extension;
 }
 
-inline String outFileNameFromItem(MediaItem* item)
+inline String outFileNameFromItem(MediaItem* item, String destdir)
 {
 	MediaItem_Take* take = GetActiveTake(item);
 	const char* tk_name = GetTakeName(take);
@@ -98,10 +98,13 @@ inline String outFileNameFromItem(MediaItem* item)
 		temp = String(CharPointer_UTF8(tk_name));
 	if (temp.endsWithIgnoreCase(".wav"))
 		temp = temp.dropLastCharacters(4);
-	char ppbuf[4096];
-	GetProjectPath(ppbuf, 4096);
-	String projectpath = String(CharPointer_UTF8(ppbuf));
-	temp = projectpath + "/" + temp + "_rubberband.wav";
+	if (destdir.isEmpty())
+	{
+		char ppbuf[4096];
+		GetProjectPath(ppbuf, 4096);
+		destdir = String(CharPointer_UTF8(ppbuf));
+	}
+	temp = destdir + "/" + temp + "_rubberband.wav";
 	File tempfile(temp);
 	tempfile = tempfile.getNonexistentSibling();
 	return tempfile.getFullPathName();
@@ -258,7 +261,7 @@ public:
 		params.m_pitch = m_pitch_slider.getValue();
 		params.m_crispness = m_crispness_combo.getSelectedId() - 1;
 		params.m_rb_exe = m_rubberband_exe;
-		params.m_outfn = outFileNameFromItem(sel_item);
+		params.m_outfn = outFileNameFromItem(sel_item,String());
 		getLastUsedParameters() = params;
 		auto completionHandler = [this,params](String err)
 		{

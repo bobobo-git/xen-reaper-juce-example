@@ -187,7 +187,7 @@ void processRubberBandUsingLastSettings(action_entry&)
 	}
 	MediaItem* sel_item = GetSelectedMediaItem(nullptr, 0);
 	RubberBandParams params = RubberBandGUI::getLastUsedParameters();
-	params.m_outfn = outFileNameFromItem(sel_item);
+	params.m_outfn = outFileNameFromItem(sel_item,String());
 	params.m_rb_exe = getRubberBandExeLocation();
 	auto completionHandler = [params](String err)
 	{
