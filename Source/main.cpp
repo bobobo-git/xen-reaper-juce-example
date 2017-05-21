@@ -185,8 +185,9 @@ void processRubberBandUsingLastSettings(action_entry&)
 		AlertWindow::showNativeDialogBox("RubberBand extension", "No media item selected", false);
 		return;
 	}
+	MediaItem* sel_item = GetSelectedMediaItem(nullptr, 0);
 	RubberBandParams params = RubberBandGUI::getLastUsedParameters();
-	params.m_outfn = getTempFileNameAtProjectDirectory(".wav");
+	params.m_outfn = outFileNameFromItem(sel_item);
 	params.m_rb_exe = getRubberBandExeLocation();
 	auto completionHandler = [params](String err)
 	{
@@ -201,7 +202,7 @@ void processRubberBandUsingLastSettings(action_entry&)
 			}
 		});
 	};
-	processItemWithRubberBandAsync(GetSelectedMediaItem(nullptr, 0), params, completionHandler);
+	processItemWithRubberBandAsync(sel_item, params, completionHandler);
 }
 
 void onActionWithValue(action_entry& ae)

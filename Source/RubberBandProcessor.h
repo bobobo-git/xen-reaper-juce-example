@@ -89,6 +89,24 @@ inline String getTempFileNameAtProjectDirectory(String extension)
 	return String(CharPointer_UTF8(buf)) + "/" + Uuid().toString() + extension;
 }
 
+inline String outFileNameFromItem(MediaItem* item)
+{
+	MediaItem_Take* take = GetActiveTake(item);
+	const char* tk_name = GetTakeName(take);
+	String temp;
+	if (strlen(tk_name) > 0)
+		temp = String(CharPointer_UTF8(tk_name));
+	if (temp.endsWithIgnoreCase(".wav"))
+		temp = temp.dropLastCharacters(4);
+	char ppbuf[4096];
+	GetProjectPath(ppbuf, 4096);
+	String projectpath = String(CharPointer_UTF8(ppbuf));
+	temp = projectpath + "/" + temp + "_rubberband.wav";
+	File tempfile(temp);
+	tempfile = tempfile.getNonexistentSibling();
+	return tempfile.getFullPathName();
+}
+
 struct RubberBandParams
 {
 	double m_time_ratio = 1.0;
@@ -234,12 +252,13 @@ public:
 			showBubbleMessage("No media item selected");
 			return;
 		}
+		MediaItem* sel_item = GetSelectedMediaItem(nullptr, 0);
 		RubberBandParams params;
 		params.m_time_ratio = m_time_ratio_slider.getValue();
 		params.m_pitch = m_pitch_slider.getValue();
 		params.m_crispness = m_crispness_combo.getSelectedId() - 1;
 		params.m_rb_exe = m_rubberband_exe;
-		params.m_outfn = getTempFileNameAtProjectDirectory(".wav");
+		params.m_outfn = outFileNameFromItem(sel_item);
 		getLastUsedParameters() = params;
 		auto completionHandler = [this,params](String err)
 		{
@@ -260,7 +279,7 @@ public:
 		};
 		m_process_start_time = Time::getMillisecondCounterHiRes();
 		m_processing = true;
-		processItemWithRubberBandAsync(GetSelectedMediaItem(nullptr, 0), params, completionHandler);
+		processItemWithRubberBandAsync(sel_item, params, completionHandler);
 		m_apply_button.setEnabled(false);
 		m_elapsed_label.setVisible(true);
 	}
