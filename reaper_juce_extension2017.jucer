@@ -2,7 +2,8 @@
 
 <JUCERPROJECT id="k9qW3z" name="reaper_juce_extension2017" projectType="dll"
               version="1.0.0" bundleIdentifier="com.yourcompany.reaper_juce_extension2017"
-              includeBinaryInAppConfig="1" jucerVersion="4.3.1">
+              includeBinaryInAppConfig="1" jucerVersion="5.0.2" displaySplashScreen="0"
+              reportAppUsage="1" splashScreenColour="Dark">
   <MAINGROUP id="tIbqXT" name="reaper_juce_extension2017">
     <GROUP id="{60736AA5-EAC7-EAD5-B5AA-7515DE64DFA0}" name="Source">
       <FILE id="GP209a" name="main.cpp" compile="1" resource="0" file="Source/main.cpp"/>
@@ -61,10 +62,10 @@
     <VS2017 targetFolder="Builds/VisualStudio2017">
       <CONFIGURATIONS>
         <CONFIGURATION name="Debug" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="1" optimisation="1" targetName="reaper_juce_extension2017"
+                       isDebug="1" optimisation="1" targetName="reaper_juce_extension"
                        defines="JUCE_REMOVE_COMPONENT_FROM_DESKTOP_ON_WM_DESTROY&#10;"/>
         <CONFIGURATION name="Release" winWarningLevel="4" generateManifest="1" winArchitecture="x64"
-                       isDebug="0" optimisation="3" targetName="reaper_juce_extension2017"
+                       isDebug="0" optimisation="3" targetName="reaper_juce_extension"
                        useRuntimeLibDLL="0" wholeProgramOptimisation="1" defines="JUCE_REMOVE_COMPONENT_FROM_DESKTOP_ON_WM_DESTROY&#10;"/>
       </CONFIGURATIONS>
       <MODULEPATHS>
