@@ -8,6 +8,7 @@
 #include "JuceHeader.h"
 #include "xy_component.h"
 #include "RubberBandProcessor.h"
+#include "image2midi.h"
 
 HINSTANCE g_hInst;
 HWND g_parent;
@@ -140,6 +141,7 @@ private:
 
 std::unique_ptr<Window> g_xy_wnd;
 std::unique_ptr<Window> g_rubberband_wnd;
+std::unique_ptr<Window> g_image2midi_wnd;
 
 std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int h, bool resizable, Colour backGroundColor)
 {
@@ -205,6 +207,16 @@ void processRubberBandUsingLastSettings(action_entry&)
 	processItemWithRubberBandAsync(sel_item, params, completionHandler);
 }
 
+void toggleImage2MIDIWindow(action_entry& ae)
+{
+	if (g_image2midi_wnd == nullptr)
+	{
+		g_image2midi_wnd = makeWindow("Image2MIDI", new Image2MIDIGUI, 400, 400, true, Colours::lightgrey);
+		g_image2midi_wnd->m_assoc_action = &ae;
+	}
+	g_image2midi_wnd->setVisible(!g_image2midi_wnd->isVisible());
+}
+
 void onActionWithValue(action_entry& ae)
 {
 	char buf[256];
@@ -252,6 +264,11 @@ extern "C"
 				toggleRubberBandWindow(ae);
 			});
 			
+			add_action("JUCE test : Show/hide Image2MIDI", "JUCETEST_SHOW_IMAGE2MIDI", ToggleOff, [](action_entry& ae)
+			{
+				toggleImage2MIDIWindow(ae);
+			});
+
 			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST",
 				CannotToggle, processRubberBandUsingLastSettings);
 			
