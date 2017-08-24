@@ -13,6 +13,7 @@ public:
 		addAndMakeVisible(&m_brightness_th_slider);
 		m_brightness_th_slider.addListener(this);
 		m_brightness_th_slider.setRange(0.0, 0.99);
+		m_brightness_th_slider.setValue(0.5);
 		setSize(400, 400);
 	}
 	void sliderValueChanged(Slider* slid) override
