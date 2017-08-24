@@ -10,12 +10,23 @@ public:
 		addAndMakeVisible(&m_import_button);
 		m_import_button.setButtonText("Import image...");
 		m_import_button.addListener(this);
+		addAndMakeVisible(&m_brightness_th_slider);
+		m_brightness_th_slider.addListener(this);
+		m_brightness_th_slider.setRange(0.0, 0.99);
 		setSize(400, 400);
 	}
 	void sliderValueChanged(Slider* slid) override
 	{
-		bool nosort = true;
-		MIDI_InsertNote(nullptr, false, false, 0, 0, 1, 12, 127, &nosort);
+		
+	}
+	void sliderDragEnded(Slider* slid) override
+	{
+		MediaItem* item = GetSelectedMediaItem(nullptr, 0);
+		MediaItem_Take* take = GetActiveTake(item);
+		if (slid == &m_brightness_th_slider)
+		{
+			generateMIDI(take, m_source_image, m_brightness_th_slider.getValue());
+		}
 	}
 	void buttonClicked(Button* but) override
 	{
@@ -33,7 +44,7 @@ public:
 					m_source_image = img;
 					MediaItem* item = GetSelectedMediaItem(nullptr, 0);
 					MediaItem_Take* take = GetActiveTake(item);
-					generateMIDI(take,m_source_image);
+					generateMIDI(take,m_source_image, m_brightness_th_slider.getValue());
 				}
 				else ShowConsoleMsg("Image file not valid\n");
 			}
@@ -43,9 +54,9 @@ public:
 	{
 		m_import_button.setTopLeftPosition(1, 1);
 		m_import_button.changeWidthToFitText(20);
-		
+		m_brightness_th_slider.setBounds(1, m_import_button.getBottom() + 2, getWidth() - 1, 20);
 	}
-	void generateMIDI(MediaItem_Take* take, Image& img)
+	void generateMIDI(MediaItem_Take* take, Image& img, float brightnessth)	
 	{
 		if (take == nullptr || img.isValid() == false)
 			return;
@@ -70,7 +81,7 @@ public:
 			for (int y = 0; y < h / gridsize; ++y)
 			{
 				auto pix = img.getPixelAt(x*gridsize, y*gridsize);
-				if (pix.getBrightness() > 0.0f)
+				if (pix.getBrightness() > brightnessth)
 				{
 					double pitch = 127.0-(127.0 / h*(y*gridsize));
 					++notecount;
@@ -91,4 +102,5 @@ public:
 private:
 	TextButton m_import_button;
 	Image m_source_image;
+	Slider m_brightness_th_slider;
 };
