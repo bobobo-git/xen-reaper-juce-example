@@ -39,7 +39,7 @@
 #endif
 
 #ifndef JUCE_REPORT_APP_USAGE
- #define JUCE_REPORT_APP_USAGE 1
+ #define JUCE_REPORT_APP_USAGE 0
 #endif
 
 
@@ -95,6 +95,10 @@
 
 #ifndef    JUCE_USE_WINRT_MIDI
  //#define JUCE_USE_WINRT_MIDI 1
+#endif
+
+#ifndef    JUCE_DISABLE_AUDIO_MIXING_WITH_OTHER_APPS
+ //#define JUCE_DISABLE_AUDIO_MIXING_WITH_OTHER_APPS 1
 #endif
 
 //==============================================================================

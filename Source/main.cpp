@@ -160,6 +160,106 @@ std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int
 	return win;
 }
 
+class UserInputsDialog : public Component, public Button::Listener
+{
+public:
+	struct field_t
+	{
+		field_t(String lbl, String initial)
+		{
+			m_label.setText(lbl, dontSendNotification);
+			m_line_edit.setText(initial, dontSendNotification);
+			m_line_edit.setColour(TextEditor::textColourId, Colours::black);
+			m_line_edit.applyColourToAllText(Colours::black, true);
+		}
+		Label m_label;
+		TextEditor m_line_edit;
+	};
+	UserInputsDialog()
+	{
+		addAndMakeVisible(&m_ok_button);
+		m_ok_button.setButtonText("OK");
+		m_ok_button.addListener(this);
+		addAndMakeVisible(&m_cancel_button);
+		m_cancel_button.setButtonText("Cancel");
+		m_cancel_button.addListener(this);
+	}
+	void buttonClicked(Button* but) override
+	{
+		DialogWindow* dw = findParentComponentOfClass<DialogWindow>();
+		if (dw == nullptr)
+			return;
+		if (but == &m_ok_button)
+		{
+			dw->exitModalState(1);
+		}
+		if (but == &m_cancel_button)
+		{
+			dw->exitModalState(2);
+		}
+	}
+
+	void addEntry(String lbl, String initial)
+	{
+		auto entry = std::make_shared<field_t>(lbl, initial);
+		addAndMakeVisible(&entry->m_label);
+		addAndMakeVisible(&entry->m_line_edit);
+		m_entries.push_back(entry);
+	}
+	void resized() override
+	{
+		int entryh = 25;
+		int labelw = 150;
+		for (int i=0;i<m_entries.size();++i)
+		{
+			m_entries[i]->m_label.setBounds(1, i*entryh, labelw, entryh - 1);
+			m_entries[i]->m_line_edit.setBounds(1+labelw+2, i*entryh, 150, entryh - 1);
+		}
+		m_ok_button.setBounds(1, getHeight() - 25, 60, 24);
+		m_cancel_button.setBounds(m_ok_button.getRight() + 1, m_ok_button.getY(), 60, 24);
+	}
+	StringArray getResults()
+	{
+		StringArray results;
+		for (auto& e : m_entries)
+			results.add(e->m_line_edit.getText());
+		return results;
+	}
+private:
+	std::vector<std::shared_ptr<field_t>> m_entries;
+	TextButton m_ok_button;
+	TextButton m_cancel_button;
+};
+
+StringArray GetUserInputsEx(String windowtitle, StringArray labels, StringArray initialentries)
+{
+	LookAndFeel_V3 lookandfeel;
+	auto dlg = std::make_unique<UserInputsDialog>();
+	dlg->setLookAndFeel(&lookandfeel);
+	for (int i = 0; i < labels.size(); ++i)
+	{
+		if (i < initialentries.size())
+		{
+			dlg->addEntry(labels[i], initialentries[i]);
+		}
+	}
+	dlg->setSize(320, labels.size() * 25 + 30);
+	int r = DialogWindow::showModalDialog(windowtitle, dlg.get(), nullptr, Colours::lightgrey, true);
+	if (r == 1)
+		return dlg->getResults();
+	return StringArray();
+}
+
+void testUserInputs()
+{
+	auto r = GetUserInputsEx("test", { "field 1","field 2" }, { "0.0","0.1" });
+	for (auto& e : r)
+	{
+		ShowConsoleMsg(e.toRawUTF8());
+		ShowConsoleMsg("\n");
+	}
+}
+
 void toggleXYWindow(action_entry& ae)
 {
 	if (g_xy_wnd == nullptr)
@@ -267,6 +367,11 @@ extern "C"
 			add_action("JUCE test : Show/hide Image2MIDI", "JUCETEST_SHOW_IMAGE2MIDI", ToggleOff, [](action_entry& ae)
 			{
 				toggleImage2MIDIWindow(ae);
+			});
+
+			add_action("JUCE test : Test user inputs", "JUCETEST_USERINPUTSEX", ToggleOff, [](action_entry& ae)
+			{
+				testUserInputs();
 			});
 
 			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST",
