@@ -7,7 +7,6 @@
 #include <string>
 #include "JuceHeader.h"
 #include "xy_component.h"
-#include "RubberBandProcessor.h"
 #include "image2midi.h"
 
 HINSTANCE g_hInst;
@@ -270,43 +269,6 @@ void toggleXYWindow(action_entry& ae)
 	g_xy_wnd->setVisible(!g_xy_wnd->isVisible());
 }
 
-void toggleRubberBandWindow(action_entry& ae)
-{
-	if (g_rubberband_wnd == nullptr)
-	{
-		g_rubberband_wnd = makeWindow("RubberBand", new RubberBandGUI, 400, 120, true, Colours::lightgrey);
-		g_rubberband_wnd->m_assoc_action = &ae;
-	}
-	g_rubberband_wnd->setVisible(!g_rubberband_wnd->isVisible());
-}
-
-void processRubberBandUsingLastSettings(action_entry&)
-{
-	if (CountSelectedMediaItems(nullptr) == 0)
-	{
-		AlertWindow::showNativeDialogBox("RubberBand extension", "No media item selected", false);
-		return;
-	}
-	MediaItem* sel_item = GetSelectedMediaItem(nullptr, 0);
-	RubberBandParams params = RubberBandGUI::getLastUsedParameters();
-	params.m_outfn = outFileNameFromItem(sel_item,String());
-	params.m_rb_exe = getRubberBandExeLocation();
-	auto completionHandler = [params](String err)
-	{
-		MessageManager::callAsync([err, params]()
-		{
-			if (err.isEmpty() == false)
-				AlertWindow::showNativeDialogBox("RubberBand extension", err, false);
-			else
-			{
-				InsertMedia(params.m_outfn.toRawUTF8(), 3);
-				UpdateArrange();
-			}
-		});
-	};
-	processItemWithRubberBandAsync(sel_item, params, completionHandler);
-}
-
 void toggleImage2MIDIWindow(action_entry& ae)
 {
 	if (g_image2midi_wnd == nullptr)
@@ -359,11 +321,6 @@ extern "C"
 				toggleXYWindow(ae);
 			});
 			
-			add_action("JUCE test : Show/hide RubberBand", "JUCETEST_SHOW_RUBBERBAND", ToggleOff, [](action_entry& ae)
-			{
-				toggleRubberBandWindow(ae);
-			});
-			
 			add_action("JUCE test : Show/hide Image2MIDI", "JUCETEST_SHOW_IMAGE2MIDI", ToggleOff, [](action_entry& ae)
 			{
 				toggleImage2MIDIWindow(ae);
@@ -374,9 +331,6 @@ extern "C"
 				testUserInputs();
 			});
 
-			add_action("JUCE test : Process with RubberBand using last used settings", "JUCETEST_PROCESS_RUBBERB_LAST",
-				CannotToggle, processRubberBandUsingLastSettings);
-			
 			add_action("JUCE test : MIDI/OSC action test", "JUCETEST_MIDIOSCTEST", CannotToggle, onActionWithValue);
 
 			rec->Register("hookcommand2", (void*)on_value_action);
