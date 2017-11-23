@@ -133,14 +133,23 @@ public:
 		ResizableWindow::visibilityChanged();
 	}
 	action_entry* m_assoc_action = nullptr;
+	template<typename T> 
+	T* getComponentAs()
+	{
+		static_assert(std::is_base_of<Component, T>::value, "Can only get as Component derived classes");
+		return dynamic_cast<T*>(m_content_component);
+	}
 private:
 	Component* m_content_component = nullptr;
 	TooltipWindow m_tooltipw;
 };
 
+class CSurfLoggerWindow;
+
 std::unique_ptr<Window> g_xy_wnd;
 std::unique_ptr<Window> g_rubberband_wnd;
 std::unique_ptr<Window> g_image2midi_wnd;
+std::unique_ptr<Window> g_csurflogger_wnd;
 
 std::unique_ptr<Window> makeWindow(String name, Component* component, int w, int h, bool resizable, Colour backGroundColor)
 {
@@ -279,6 +288,71 @@ void toggleImage2MIDIWindow(action_entry& ae)
 	g_image2midi_wnd->setVisible(!g_image2midi_wnd->isVisible());
 }
 
+
+
+class CSurfLoggerComponent : public Component
+{
+public:
+	CSurfLoggerComponent()
+	{
+		addAndMakeVisible(&m_ed);
+		m_ed.setMultiLine(true);
+		m_ed.setReadOnly(true);
+	}
+	void resized() override
+	{
+		m_ed.setBounds(0, 0, getWidth(), getHeight());
+	}
+	void addMessage(String txt)
+	{
+		m_ed.insertTextAtCaret(txt);
+		m_ed.setCaretPosition(m_ed.getText().length());
+	}
+private:
+	TextEditor m_ed;
+};
+
+class MySurface : public IReaperControlSurface
+{
+public:
+
+	void SetSurfaceSelected(MediaTrack *trackid, bool selected) override
+	{
+		if (g_csurflogger_wnd == nullptr)
+			return;
+		auto comp = g_csurflogger_wnd->getComponentAs<CSurfLoggerComponent>();
+		if (selected)
+			comp->addMessage("track " + String((int64_t)trackid) + " selected\n");
+		else comp->addMessage("track " + String((int64_t)trackid) + " unselected\n");
+	}
+	// Inherited via IReaperControlSurface
+	virtual const char * GetTypeString() override
+	{
+		return "mysurf";
+	}
+
+	virtual const char * GetDescString() override
+	{
+		return "My Surface";
+	}
+
+	virtual const char * GetConfigString() override
+	{
+		return "";
+	}
+
+};
+
+void toggleCSurfLoggerWindow(action_entry& ae)
+{
+	if (g_csurflogger_wnd == nullptr)
+	{
+		g_csurflogger_wnd = makeWindow("CSurf Logger", new CSurfLoggerComponent, 400, 400, true, Colours::lightgrey);
+		g_csurflogger_wnd->m_assoc_action = &ae;
+	}
+	g_csurflogger_wnd->setVisible(!g_csurflogger_wnd->isVisible());
+}
+
 void onActionWithValue(action_entry& ae)
 {
 	char buf[256];
@@ -326,6 +400,11 @@ extern "C"
 				toggleImage2MIDIWindow(ae);
 			});
 
+			add_action("JUCE test : Show/hide CSurf Logger", "JUCETEST_SHOW_CSURFLOGGER", ToggleOff, [](action_entry& ae)
+			{
+				toggleCSurfLoggerWindow(ae);
+			});
+
 			add_action("JUCE test : Test user inputs", "JUCETEST_USERINPUTSEX", ToggleOff, [](action_entry& ae)
 			{
 				testUserInputs();
@@ -335,6 +414,8 @@ extern "C"
 
 			rec->Register("hookcommand2", (void*)on_value_action);
 			rec->Register("toggleaction", (void*)toggleActionCallback);
+			MySurface* surf = new MySurface;
+			rec->Register("csurf_inst", surf);
 			return 1; // our plugin registered, return success
 		}
 		else
