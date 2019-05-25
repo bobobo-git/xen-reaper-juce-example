@@ -2,8 +2,8 @@
 
 <JUCERPROJECT id="k9qW3z" name="reaper_juce_extension2017" projectType="dll"
               version="1.0.0" bundleIdentifier="com.yourcompany.reaper_juce_extension2017"
-              includeBinaryInAppConfig="1" jucerVersion="5.2.0" displaySplashScreen="0"
-              reportAppUsage="0" splashScreenColour="Dark" cppLanguageStandard="14"
+              includeBinaryInAppConfig="1" jucerVersion="5.4.3" displaySplashScreen="0"
+              reportAppUsage="0" splashScreenColour="Dark" cppLanguageStandard="latest"
               companyCopyright="">
   <MAINGROUP id="tIbqXT" name="reaper_juce_extension2017">
     <GROUP id="{60736AA5-EAC7-EAD5-B5AA-7515DE64DFA0}" name="Source">
@@ -65,18 +65,20 @@
     </VS2017>
   </EXPORTFORMATS>
   <MODULES>
-    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_cryptography" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0"/>
-    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0"/>
+    <MODULE id="juce_audio_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_devices" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_formats" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_audio_processors" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_core" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_cryptography" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_data_structures" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_events" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_graphics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_basics" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
+    <MODULE id="juce_gui_extra" showAllCode="1" useLocalCopy="0" useGlobalPath="1"/>
   </MODULES>
-  <JUCEOPTIONS JUCE_PLUGINHOST_VST="disabled" JUCE_PLUGINHOST_VST3="disabled"
-               JUCE_PLUGINHOST_AU="disabled"/>
+  <JUCEOPTIONS JUCE_PLUGINHOST_VST="0" JUCE_PLUGINHOST_VST3="0" JUCE_PLUGINHOST_AU="0"/>
+  <LIVE_SETTINGS>
+    <WINDOWS/>
+  </LIVE_SETTINGS>
 </JUCERPROJECT>

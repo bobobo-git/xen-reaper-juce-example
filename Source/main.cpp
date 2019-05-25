@@ -95,9 +95,9 @@ public:
 	Window(String title, Component* content, int w, int h, bool resizable, Colour bgcolor)
 		: ResizableWindow(title,bgcolor,false), m_content_component(content)
 	{
-		setContentOwned(m_content_component, true);
 		setTopLeftPosition(10, 60);
 		setSize(w, h);
+		setContentOwned(m_content_component, true);
 		setResizable(resizable, false);
 		setOpaque(true);
 	}
@@ -298,6 +298,7 @@ public:
 		addAndMakeVisible(&m_ed);
 		m_ed.setMultiLine(true);
 		m_ed.setReadOnly(true);
+		setSize(300, 300); // need some initial size, so Juce does not assert
 	}
 	void resized() override
 	{
@@ -424,6 +425,7 @@ extern "C"
 			{
 				g_xy_wnd = nullptr;
 				g_rubberband_wnd = nullptr;
+				g_csurflogger_wnd = nullptr;
 				shutdownJuce_GUI();
 				g_juce_messagemanager_inited = false;
 			}
